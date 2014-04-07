@@ -1,20 +1,11 @@
-# class Scope:
-#   def __init__(self, num_registers=10):
-#     self.scope = {}
-#     self.num_registers = num_registers
+# I have explicitly chosen not to optimise the output of this compiler for the
+# moment. That's the next project.
 
-#   def get_var_position(var):
-#     return scope[var]
+import random
 
-#   def get_next_position():
-#     for i in range(num_registers):
-#       if i not in scope:
-#         return i
-#     raise "No more registers"
+binOps = {"*" : "mult", "%": "mod", "-": "sub"}
 
-binOps = {"*" : "mult", "%": "mod"}
-
-# return (code, next_register, output)
+# returns (code, next_register, output)
 def compile_expression(expression, scope, next_register):
     if expression[0] == "Var":
         return ([], next_register, scope[expression[1]])
@@ -34,6 +25,46 @@ def compile_expression(expression, scope, next_register):
                         left_register, right_register, next_register))
         return (code, next_register + 1, next_register)
 
+# returns code
+def compile_statement(statement, scope):
+    code = ["; %s"%str(statement[0])]
+    if statement[0] == "Empty":
+        return code
+    elif statement[0] == "Assignment":
+        new_code, x, output = compile_expression(statement[2], scope, len(scope))
+        code.extend(new_code)
+        code.append("load R%d R%d"%(output, scope[statement[1]]))
+        return code
+    elif statement[0] == "IfElse":
+        lhs, rhs, op, if_body, else_body = statement[1:]
+        if op != "==":
+            raise "not implemented"
+
+        new_code, x, output = compile_expression(("BinOp","-",lhs,rhs), scope, len(scope))
+        code.extend(new_code)
+
+        after_if_name = "IfStatementBodyEnd" + str(random.random())
+        end_name = "IfStatementElseEnd" + str(random.random())
+
+        code.append("jumpz R%d %s"%(output, after_if_name))
+
+        for statement in if_body:
+            code.extend(compile_statement(statement, scope))
+
+        if else_body:
+            code.append("jump %s"%end_name)
+            code.append("%s:"%after_if_name)
+
+            for statement in else_body:
+                code.extend(compile_statement(statement, scope))
+
+            code.append("%s:"%end_name)
+        else:
+            code.append("%s:"%after_if_name)
+
+        return code
+
+
 
 "x % 5 * y % 7"
 example = \
@@ -51,8 +82,11 @@ example = \
 assert compile_expression(("Var", "x"), {"x":0, "y":1}, 2) == ([], 2, 0)
 assert compile_expression(("Var", "y"), {"x":0, "y":1}, 2) == ([], 2, 1)
 
-for line in compile_expression(example, {"x":0, "y":1}, 2)[0]:
-    print line
+for x in compile_statement(
+        ("IfElse", ("Var", "x"), ("Const", 2), "==",
+                [("Assignment", "x", example)],
+                [("Assignment", "x", ("Const", 2))]), {"x":0, "y":1}):
+    print x
 # =>
 """
 LOAD #5 R2
