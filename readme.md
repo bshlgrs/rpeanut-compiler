@@ -1,5 +1,37 @@
 This might compile C to rPeANUt one day!
 
+Here's what I have at the moment:
+
+```python
+for x in compile_statement(
+        ("IfElse", ("Var", "x"), ("Const", 2), "==",
+                [("Assignment", "x", example)],
+                [("Assignment", "x", ("Const", 2))]), {"x":0, "y":1}):
+    print x
+```
+outputs
+
+```
+; IfElse
+load #2 R2
+sub R0 R2 R2
+jumpnz R2 IfStatementBodyEnd0.808708101953
+; Assignment
+load #5 R2
+mod R0 R2 R2
+load #7 R3
+mod R1 R3 R3
+mult R2 R3 R2
+move R2 R0
+jump IfStatementElseEnd0.460291366317
+IfStatementBodyEnd0.808708101953:
+; Assignment
+load #2 R2
+move R2 R0
+IfStatementElseEnd0.460291366317:
+```
+
+
 ##Dependencies:
 
 pycparser

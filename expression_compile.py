@@ -33,12 +33,12 @@ def compile_statement(statement, scope):
     elif statement[0] == "Assignment":
         new_code, x, output = compile_expression(statement[2], scope, len(scope))
         code.extend(new_code)
-        code.append("load R%d R%d"%(output, scope[statement[1]]))
+        code.append("move R%d R%d"%(output, scope[statement[1]]))
         return code
     elif statement[0] == "IfElse":
         lhs, rhs, op, if_body, else_body = statement[1:]
         if op != "==":
-            raise "not implemented"
+            raise Exception("not implemented")
 
         new_code, x, output = compile_expression(("BinOp","-",lhs,rhs), scope, len(scope))
         code.extend(new_code)
@@ -46,7 +46,7 @@ def compile_statement(statement, scope):
         after_if_name = "IfStatementBodyEnd" + str(random.random())
         end_name = "IfStatementElseEnd" + str(random.random())
 
-        code.append("jumpz R%d %s"%(output, after_if_name))
+        code.append("jumpnz R%d %s"%(output, after_if_name))
 
         for statement in if_body:
             code.extend(compile_statement(statement, scope))
@@ -63,7 +63,30 @@ def compile_statement(statement, scope):
             code.append("%s:"%after_if_name)
 
         return code
+    elif statement[0] == "While":
+        lhs, rhs, op, while_body
+        if op != "==":
+            raise Exception("not implemented")
 
+        start_name = "WhileStatementStart" + str(random.random())
+        end_name = "WhileStatementBodyEnd" + str(random.random())
+
+        new_code, x, output = compile_expression(("BinOp","-",lhs,rhs), scope, len(scope))
+
+        code.append("%s:"%start_name)
+        code.extend(new_code)
+
+        code.append("jumpnz R%d %s"%(output, end_name))
+
+        for statement in if_body:
+            code.extend(compile_statement(statement, scope))
+
+        code.append("jump %s"%start_name)
+        code.append("%s:"%end_name)
+
+        return code
+    else:
+        raise Exception("Not implemented")
 
 
 "x % 5 * y % 7"
@@ -87,10 +110,3 @@ for x in compile_statement(
                 [("Assignment", "x", example)],
                 [("Assignment", "x", ("Const", 2))]), {"x":0, "y":1}):
     print x
-# =>
-"""
-LOAD #5 R2
-MOD R0 R2 R2
-LOAD #7 R3
-MOD R1 R3 R3
-MULT R2 R3 R2"""
