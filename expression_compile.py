@@ -3,6 +3,15 @@
 
 import random
 
+class Counter:
+    def __init__(self):
+        self.count = 0
+    def get_count(self):
+        self.count += 1
+        return self.count - 1
+
+c = Counter()
+
 binOps = {"*" : "mult", "%": "mod", "-": "sub"}
 
 # returns (code, next_register, output)
@@ -40,11 +49,16 @@ def compile_statement(statement, scope):
         if op != "==":
             raise Exception("not implemented")
 
+        name = c.get_count()
+
+        code.append("; If Statement #%d"%name)
+
         new_code, x, output = compile_expression(("BinOp","-",lhs,rhs), scope, len(scope))
         code.extend(new_code)
 
-        after_if_name = "IfStatementBodyEnd" + str(random.random())
-        end_name = "IfStatementElseEnd" + str(random.random())
+
+        after_if_name = "IfStatementBodyEnd" + str(name)
+        end_name = "IfStatementElseEnd" + str(name)
 
         code.append("jumpnz R%d %s"%(output, after_if_name))
 
@@ -63,13 +77,18 @@ def compile_statement(statement, scope):
             code.append("%s:"%after_if_name)
 
         return code
+    elif statement[0] == "If":
+        lhs, rhs, op, if_body = statement[1:]
+        return compile_statement(("IfElse", lhs, rhs, op, if_body, []), scope)
     elif statement[0] == "While":
-        lhs, rhs, op, while_body
+        lhs, rhs, op, while_body = statement[1:]
         if op != "==":
             raise Exception("not implemented")
 
-        start_name = "WhileStatementStart" + str(random.random())
-        end_name = "WhileStatementBodyEnd" + str(random.random())
+        name = c.get_count()
+
+        start_name = "WhileStatementStart" + str(name)
+        end_name = "WhileStatementBodyEnd" + str(name)
 
         new_code, x, output = compile_expression(("BinOp","-",lhs,rhs), scope, len(scope))
 
@@ -78,7 +97,9 @@ def compile_statement(statement, scope):
 
         code.append("jumpnz R%d %s"%(output, end_name))
 
-        for statement in if_body:
+        code.append("; WhileStatementBodyStart #%d"%name)
+
+        for statement in while_body:
             code.extend(compile_statement(statement, scope))
 
         code.append("jump %s"%start_name)
@@ -86,8 +107,16 @@ def compile_statement(statement, scope):
 
         return code
     else:
-        raise Exception("Not implemented")
+        raise Exception("Not implemented: %s"%str(statement))
 
+def pretty_print_assembly(assembly):
+    for line in assembly:
+        if line[-1] == ":":
+            print line
+        elif line[0] == ";":
+            print "  " + line
+        else:
+            print "\t" + line
 
 "x % 5 * y % 7"
 example = \
@@ -105,8 +134,8 @@ example = \
 assert compile_expression(("Var", "x"), {"x":0, "y":1}, 2) == ([], 2, 0)
 assert compile_expression(("Var", "y"), {"x":0, "y":1}, 2) == ([], 2, 1)
 
-for x in compile_statement(
-        ("IfElse", ("Var", "x"), ("Const", 2), "==",
-                [("Assignment", "x", example)],
-                [("Assignment", "x", ("Const", 2))]), {"x":0, "y":1}):
-    print x
+compilation_value = compile_statement(
+        ("While", ("Var", "x"), ("Const", 2), "==",
+                [("Assignment", "x", example)]), {"x":0, "y":1})
+
+pretty_print_assembly(compilation_value)
