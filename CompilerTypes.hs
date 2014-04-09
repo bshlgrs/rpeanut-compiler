@@ -30,8 +30,10 @@ data Function = Function Name
 
 data Register = Register Int
               | SP
+        deriving Show
 
 data Address = Address Int
+        deriving Show
 
 data Instruction = Add Register Register Register
                  | Sub Register Register Register
@@ -40,9 +42,10 @@ data Instruction = Add Register Register Register
                  | Jump Address
                  | Jumpz Register Address
                  | Push Register
-                 | ImmediateLoad Register
+                 | ImmediateLoad Int Register
                  | BDLoad Register Int Register
                  | Halt
+      deriving Show
 
 -- This ignores the possibility of other stuff than function definitions.
 data Program = Program [Function]
