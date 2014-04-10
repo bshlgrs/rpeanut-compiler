@@ -11,6 +11,8 @@ type RegisterAllocations = ([Maybe Name], Int)
 
 maxRegisters = 10
 
+blankAlloc = ([], -1)
+
 posInRegisters :: RegisterAllocations -> Name -> Maybe Int
 posInRegisters alloc name = case elemIndex (Just name) (fst alloc) of
               (Just x) -> Just $ (snd alloc - x) `mod` maxRegisters
@@ -46,6 +48,16 @@ compileExpression expression scope alloc = case expression of
             where
                 numPosition = front newAlloc
                 newAlloc = saveConstant alloc
+        (Op op l r) -> (lCode ++ rCode ++ [opCode], alloc4, front alloc4)
+            where
+                (lCode, alloc2, leftRegister) = compileExpression l scope alloc
+                (rCode, alloc3, rightRegister) = compileExpression r scope alloc2
+                alloc4 = saveConstant alloc3
+                opCode = (opToInstruction op) leftRegister rightRegister
+                                                                (front alloc4)
 
 simpleScope :: Scope
 simpleScope = (M.fromAscList [("x",0), ("y",1)])
+
+opToInstruction :: String -> (Register -> Register -> Register -> Instruction)
+opToInstruction "+" = Add
