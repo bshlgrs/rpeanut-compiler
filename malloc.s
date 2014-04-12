@@ -1,3 +1,21 @@
+; This is an implementation of a simpler version of malloc.
+
+; A call to 'malloc' will return the address of a word in
+; memory which has now been allocated for your usage.
+
+; Calling 'free' will free up the used memory.
+
+; This basically works by constructing a linked list in memory
+; of free memory.
+
+; Malloc and free are both constant time.
+
+; Edward Swernofsky came up with this algorithm, I just
+; implemented it.
+
+; You can see a C version at https://github.com/BuckShlegeris/rpeanut-compiler/blob/master/ed's_malloc.c
+
+
 0x0100:
 	push R0
 	call malloc
@@ -54,12 +72,39 @@ malloc_move_frontier:
 	
 ; print "error: memory overflow" and exit
 memory_overflow:
-load #'E' R0
-store R0 0xFFF0
-load #'r' R0
-store R0 0xFFF0
-load #'r' R0
-halt
+  load #'m' R0
+  store R0 0xFFF0
+  load #'e' R0
+  store R0 0xFFF0
+  load #'m' R0
+  store R0 0xFFF0
+  load #'o' R0
+  store R0 0xFFF0
+  load #'r' R0
+  store R0 0xFFF0
+  load #'y' R0
+  store R0 0xFFF0
+  load #' ' R0
+  store R0 0xFFF0
+  load #'o' R0
+  store R0 0xFFF0
+  load #'v' R0
+  store R0 0xFFF0
+  load #'e' R0
+  store R0 0xFFF0
+  load #'r' R0
+  store R0 0xFFF0
+  load #'f' R0
+  store R0 0xFFF0
+  load #'l' R0
+  store R0 0xFFF0
+  load #'o' R0
+  store R0 0xFFF0
+  load #'w' R0
+  store R0 0xFFF0
+  load #'\n' R0
+  store R0 0xFFF0
+  halt
 
 ; free(int pos)
 free:
