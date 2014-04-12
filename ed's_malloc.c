@@ -1,3 +1,23 @@
+// This is an implementation of a simple variation of malloc, which can only
+// allocate blocks of a fixed size.
+
+// The basic idea is that within the space for dynamic memory, every free space
+// is a pointer to the next free space. We have two pointers in memory, frontier
+// and next. Next points to the beginning of the linked list. Frontier points to
+// the next place in our "heap" which hasn't been allocated ever.
+
+// To malloc, we look at the memory location pointed to by next. If it's
+// pointing to -1, then we set it to the frontier and move the frontier pointer
+// along. If it's pointing to another memory location, we set next to point to
+// this second node. In both cases, we return the original value of next. This
+// operation is basically equivalent to removing the first item in the linked
+// list.
+
+// To free, we push the freed location to the beginning of the linked list.
+
+// Both of these operations take constant time, and malloc can provide a warning
+// if too much space is used.
+
 #include <stdio.h>
 #include <stdlib.h>
 
