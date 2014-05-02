@@ -48,7 +48,7 @@ val secondLine = IndirectAssignment(BinOp(AddOp, Var("array"), Var("i")),
                                       Var("i"))))
 val exampleCode = List(zerothLine, firstLine, secondLine)
 
-println (exampleCode.mkString("\n"))
+
 
 
 abstract class VarOrLit {
@@ -95,8 +95,20 @@ def statementsToIntermediate(block: List[Statement]): List[InterInstr] = {
             VOLVar(out))
         }
         case Var(n) => (Nil, VOLVar(n))
+        case Load(exp) => {
+          val (rhsInstr, rhsVar) = exprToIntermediate(exp)
+          val out = getCounter()
+          rhsVar match {
+            case VOLLit(_) => throw new Exception("illegal stuff")
+            case VOLVar(n) => {
+              (rhsInstr :+ LoadInter(n, out), VOLVar(out))
+            }
+          }
+        }
       }
       var (exprInters, resultPlace) = exprToIntermediate(rhs)
+      // This is a silly way of doing this. It generates extraneous copy
+      // instructions.
       exprInters :+ CopyInter(resultPlace, name)
     }
   }
@@ -104,3 +116,5 @@ def statementsToIntermediate(block: List[Statement]): List[InterInstr] = {
   block.flatMap(statementToIntermediate)
 }
 
+// println(exampleCode.mkString("\n"))
+println(statementsToIntermediate(List(zerothLine)).mkString("\n"))
