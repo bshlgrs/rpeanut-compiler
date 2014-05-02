@@ -27,18 +27,42 @@ abstract class BinOperator {
 case object AddOp extends BinOperator
 case object MulOp extends BinOperator
 
+abstract class BoolExpr {
+  override def toString: String = this match {
+    case BoolBinOp(op, e1, e2) => e1.toString + " " + op.toString + " " + e2.toString
+  }
+}
+
+case class BoolBinOp(op: BoolBinOperator, lhs: Expr, rhs: Expr) extends BoolExpr
+
+abstract class BoolBinOperator {
+  override def toString: String = this match {
+    case Equals => "=="
+    case GreaterThan => ">"
+  }
+}
+
+case object Equals extends BoolBinOperator
+case object GreaterThan extends BoolBinOperator
+
+
 abstract class Statement {
   override def toString: String = this match {
     case Assignment(name, rhs) => name + " = " + rhs.toString + ";"
     case IndirectAssignment(lhs, rhs) => "*" + lhs.toString + " = " + rhs.toString+";"
+    case IfElse(condition, thenBlock, elseBlock) => ("if (" + condition.toString +
+                ") { \n"+thenBlock.mkString("\n") + "} \nelse {\n" +
+                        elseBlock.mkString("\n") + "\n}")
   }
 
 }
 case class Assignment(name: String, rhs: Expr) extends Statement
 case class IndirectAssignment(lhs: Expr, rhs: Expr) extends Statement
+case class IfElse(condition: BoolExpr,
+                  thenBlock: List[Statement],
+                  elseBlock: List[Statement]) extends Statement
 
-// i = j * 4
-val zerothLine = Assignment("i", BinOp(MulOp, Var("j"), Lit(4)))
+
 // swap = array[i]
 val firstLine = Assignment("temp", Load(BinOp(AddOp, Var("array"), Var("i"))))
 // array[i] = array[i+1]
@@ -46,15 +70,32 @@ val secondLine = IndirectAssignment(BinOp(AddOp, Var("array"), Var("i")),
                                   Load(BinOp(AddOp,
                                       BinOp(AddOp, Lit(1), Var("array")),
                                       Var("i"))))
-val exampleCode = List(zerothLine, firstLine, secondLine)
+// array[i+1] = swap
+val thirdLine = IndirectAssignment(BinOp(AddOp,
+                                      BinOp(AddOp, Lit(1), Var("array")),
+                                      Var("i")),
+                                      Var("swap"))
 
+val exampleCode = List(firstLine, secondLine, thirdLine)
 
+// arr[i] > arr[i+1]
+val exampleBool = BoolBinOp(GreaterThan,
+                            Load(BinOp(AddOp, Var("array"), Var("i"))),
+                            Load(BinOp(AddOp,
+                                      BinOp(AddOp, Lit(1), Var("array")),
+                                      Var("i"))))
 
+val moreComplexExampleCode = IfElse(exampleBool, exampleCode, List())
 
 abstract class VarOrLit {
   override def toString: String = this match {
     case VOLVar(n) => n
-    case VOLLit(n) => "#" + n.toString
+    case VOLLit(n) => n.toString
+  }
+
+  def getVar(): String = this match {
+    case VOLLit(n) => throw new Exception("gah")
+    case VOLVar(n) => n
   }
 }
 
@@ -63,10 +104,10 @@ case class VOLLit(n: Int) extends VarOrLit
 
 abstract class InterInstr {
   override def toString: String = this match {
-    case BinOpInter(op, in1, in2, out) => s"${op.toString} ${in1.toString} ${in2.toString} $out"
-    case LoadInter(source, target) => s"${target.toString} = *${source.toString}"
-    case StoreInter(source, target) => s"*${target.toString} = ${source.toString}"
-    case CopyInter(source, target) => s"${target.toString} = ${source.toString}"
+    case BinOpInter(op, in1, in2, out) => s"$out\t= ${in1.toString} ${op.toString} ${in2.toString}"
+    case LoadInter(source, target) => s"${target.toString}\t= *${source.toString}"
+    case StoreInter(source, target) => s"*${target.toString}\t= ${source.toString}"
+    case CopyInter(source, target) => s"${target.toString}\t= ${source.toString}"
   }
 }
 
@@ -76,45 +117,52 @@ case class LoadInter(sourceVar: String, targetVar: String) extends InterInstr
 case class StoreInter(sourceVar: String, targetVar: String) extends InterInstr
 case class CopyInter(sourceVar: VarOrLit, targetVar: String) extends InterInstr
 
-def statementsToIntermediate(block: List[Statement]): List[InterInstr] = {
-  var counter = 0
-  def getCounter(): String = {
-    counter = counter + 1
-    "$temp_" + counter.toString
-  }
+// global counter, why not
+var counter = 0
+def getCounter(): String = {
+  counter = counter + 1
+  "$tmp" + counter.toString
+}
 
-  def statementToIntermediate(stat: Statement): List[InterInstr] = stat match {
-    case Assignment(name, rhs) => {
-      def exprToIntermediate(expr: Expr): (List[InterInstr], VarOrLit) = expr match {
-        case Lit(n) => (Nil, VOLLit(n))
-        case BinOp(op, e1, e2) => {
-          val (lhsInstr, lhsVar) = exprToIntermediate(e1)
-          val (rhsInstr, rhsVar) = exprToIntermediate(e2)
-          val out = getCounter()
-          (lhsInstr ::: rhsInstr ::: List(BinOpInter(op, lhsVar, rhsVar, out)),
-            VOLVar(out))
-        }
-        case Var(n) => (Nil, VOLVar(n))
-        case Load(exp) => {
-          val (rhsInstr, rhsVar) = exprToIntermediate(exp)
-          val out = getCounter()
-          rhsVar match {
-            case VOLLit(_) => throw new Exception("illegal stuff")
-            case VOLVar(n) => {
-              (rhsInstr :+ LoadInter(n, out), VOLVar(out))
-            }
-          }
-        }
+def exprToIntermediate(expr: Expr): (List[InterInstr], VarOrLit) = expr match {
+  case Lit(n) => (Nil, VOLLit(n))
+  case BinOp(op, e1, e2) => {
+    val (lhsInstr, lhsVar) = exprToIntermediate(e1)
+    val (rhsInstr, rhsVar) = exprToIntermediate(e2)
+    val out = getCounter()
+    (lhsInstr ::: rhsInstr ::: List(BinOpInter(op, lhsVar, rhsVar, out)),
+      VOLVar(out))
+  }
+  case Var(n) => (Nil, VOLVar(n))
+  case Load(exp) => {
+    val (rhsInstr, rhsVar) = exprToIntermediate(exp)
+    val out = getCounter()
+    rhsVar match {
+      case VOLLit(_) => throw new Exception("illegal stuff")
+      case VOLVar(n) => {
+        (rhsInstr :+ LoadInter(n, out), VOLVar(out))
       }
-      var (exprInters, resultPlace) = exprToIntermediate(rhs)
-      // This is a silly way of doing this. It generates extraneous copy
-      // instructions.
-      exprInters :+ CopyInter(resultPlace, name)
     }
   }
+}
 
+def statementToIntermediate(stat: Statement): List[InterInstr] = stat match {
+  case Assignment(name, rhs) => {
+    var (exprInters, resultPlace) = exprToIntermediate(rhs)
+    // This is a silly way of doing this. It generates extraneous copy
+    // instructions.
+    exprInters :+ CopyInter(resultPlace, name)
+  }
+  case IndirectAssignment(lhs, rhs) => {
+    val (lhsInstr, lhsVar) = exprToIntermediate(lhs)
+    val (rhsInstr, rhsVar) = exprToIntermediate(rhs)
+    (lhsInstr ::: rhsInstr) :+ StoreInter(lhsVar.getVar(), rhsVar.getVar())
+  }
+}
+
+def statementsToIntermediate(block: List[Statement]): List[InterInstr] = {
   block.flatMap(statementToIntermediate)
 }
 
-// println(exampleCode.mkString("\n"))
-println(statementsToIntermediate(List(zerothLine)).mkString("\n"))
+println(moreComplexExampleCode)
+// println(statementsToIntermediate(exampleCode).mkString("\n"))
