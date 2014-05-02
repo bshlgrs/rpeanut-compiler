@@ -1,0 +1,84 @@
+Easy compiler:
+
+1. Turn C string into AST
+1b. Figure out functional dependency graph. Inline stuff as much as possible.
+2. Turn AST into a list of blocks of intermediate code.
+3. Turn each block into assembly.
+
+The intermediate code looks like:
+
+add x y temp2   // temp2 = x + y
+set temp1 temp2 // *temp1 = temp2
+get temp1 temp2 // temp1 = *temp2
+
+call other_method [temp2, y] temp3 // temp3 = other_method(temp2, y)
+call_void other_method [temp2, y]
+// I want to have a primitive call instruction like that because I want to handle it at the same time as register allocation.
+
+jump OtherBlock
+
+jumpz OtherBlock var
+jumpnz OtherBlock var
+jumpn OtherBlock var
+return var
+
+
+4. Turn each intermediate block into assembly.
+
+This involves register allocation.
+
+In order to do that, I need to know at all points:
+
+register_values, array of what's in what register.
+getPositionOfVariable :: Name -> Maybe Register
+    what variable is in what register
+
+variable_synchs, map of names to bool
+    whether its register value is synced to its actual value
+
+- the priorities of everything in a register. From most important to least:
+  - a value being computed which doesn't live anywhere
+  - a variable which is in memory somewhere and is needed again
+  - a variable which is in memory but isn't needed again
+  - dead/empty
+    - I can calculate dead/empty from looking at appearances in things later in the stack
+
+variable_positions, map from names to (Relative | Global) x Int.
+
+- where variables live on the stack, or the shared memory area (or not on the stack)
+
+- a map describing whether variables are ever passed by reference.
+
+To translate something like add x y z, I need to:
+
+- figure out where x is.
+  - If it's in a register already, great.
+  - If it's not currently in a register, find the lowest priority register and then put it in there. If that will displace a live variable, we need to save that variable back in its place.
+- figure out where y is, analogously
+- figure out a register to store z. z is a dead variable for the purpose of this computation. Store z there. Update the positions hash.
+
+To translate something like *a = b, I need to:
+
+- store everything which isn't synched to its memory location and is passed by reference at some point
+- get a into a register, as like before
+- get b into a register, like before
+- do the store
+- erase all variables which are ever passed by reference from my register allocation.
+
+To translate something like a = *b, I need to:
+
+- store everything which isn't synched to its memory location and is passed by reference at some point
+- decide where to put the result, given that a is now a dead variable
+- get b into a register, like before
+- do the store
+- erase all variables which are ever passed by reference from my register allocation.
+
+To translate something like return x, I need to:
+- get x from wherever it is
+- put that the right place in the stack
+
+To translate something like y = f(x,y,z), I need to:
+- Store every variable which isn't synched with its actual memory location. Non-dead temporary variables need to be given a place to live on the stack when this happens.
+- Push the relevant variables on the stack.
+- Push a space for the return value on the stack.
+
