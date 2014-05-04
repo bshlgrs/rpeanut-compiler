@@ -26,14 +26,15 @@ object Main extends App {
   val exampleCode = List[statement.Statement](firstLine, secondLine, thirdLine)
 
   // arr[i] > arr[i+1]
-  val exampleBool = boolExpr.BoolBinOp(GreaterThan,
+  val exampleBool = boolExpr.BoolBinOp(boolExpr.GreaterThan,
                               Load(BinOp(AddOp, Var("array"), Var("i"))),
                               Load(BinOp(AddOp,
                                         BinOp(AddOp, Lit(1), Var("array")),
-                                        Var("i"))))
+                                        Var("i")))) : boolExpr.BoolExpr
 
   val moreComplexExampleCode = statement.IfElse(exampleBool, exampleCode, List())
 
   println(moreComplexExampleCode)
-  println(StatementHelper.statementsToIntermediate(exampleCode).mkString("\n"))
+  // println(StatementHelper.statementsToIntermediate(exampleCode).mkString("\n"))
+  println(moreComplexExampleCode.toIntermediate().mkString("\n"))
 }

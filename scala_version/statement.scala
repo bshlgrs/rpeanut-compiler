@@ -20,7 +20,7 @@ abstract class Statement {
 }
 
 case class Assignment(name: String, rhs: Expr) extends Statement {
-  def toIntermediate(): List[InterInstr] = {
+  override def toIntermediate(): List[InterInstr] = {
     var (exprInters, resultPlace) = rhs.toIntermediate()
     // This is a silly way of doing this. It generates extraneous copy
     // instructions.
@@ -28,7 +28,7 @@ case class Assignment(name: String, rhs: Expr) extends Statement {
   }
 }
 case class IndirectAssignment(lhs: Expr, rhs: Expr) extends Statement {
-  def toIntermediate(): List[InterInstr] = {
+  override def toIntermediate(): List[InterInstr] = {
     val (lhsInstr, lhsVar) = lhs.toIntermediate()
     val (rhsInstr, rhsVar) = rhs.toIntermediate()
     CommentInter(this.toString()) +: (lhsInstr ::: rhsInstr) :+ StoreInter(lhsVar.getVar(), rhsVar.getVar())
@@ -38,19 +38,37 @@ case class IndirectAssignment(lhs: Expr, rhs: Expr) extends Statement {
 case class IfElse(condition: BoolExpr,
                   thenBlock: List[Statement],
                   elseBlock: List[Statement]) extends Statement {
-  def toIntermediate(): List[InterInstr] = {
+  override def toIntermediate(): List[InterInstr] = {
     val counter = Counter.getCounter();
     val conditionCode = condition.toIntermediate(counter) : List[InterInstr]
     val thenCode = StatementHelper.statementsToIntermediate(thenBlock)
     val elseCode = StatementHelper.statementsToIntermediate(elseBlock)
 
-    return (conditionCode :::
+    return (List(CommentInter("if (" + condition.toString + ") {")) :::
+            conditionCode :::
+            List(CommentInter("} else {")) :::
             List(LabelInter("then-"+counter.toString)) :::
             (thenCode :+
             JumpInter("end-"+counter.toString) :+
             LabelInter("else-"+counter.toString)) :::
             (elseCode :+
-            LabelInter("end-"+counter.toString)))
+            LabelInter("end-"+counter.toString)) :::
+            List(CommentInter("}")))
+  }
+}
+
+case class While(condition: BoolExpr, block: List[Statement]) extends Statement {
+  override def toIntermediate(): List[InterInstr] = {
+    val counter = Counter.getCounter();
+    val conditionCode = condition.toIntermediate(counter) : List[InterInstr]
+
+    (List(CommentInter("while ("+ condition.toString + ") {"),
+         LabelInter("while-" + counter.toString)) :::
+      conditionCode :::
+      List(JumpInter("while-" + counter.toString),
+        CommentInter("}"),
+        LabelInter("else-"+counter.toString)))
+
   }
 }
 

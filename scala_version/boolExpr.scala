@@ -13,7 +13,7 @@ abstract class BoolExpr {
     case OrExpr(lhs, rhs) => "("+ lhs.toString + " || " + rhs.toString + ")"
   }
 
-  def toIntermediate(labelNumber: Int) = throw new Exception("not implemented")
+  def toIntermediate(labelNumber: Int): List[InterInstr] = throw new Exception("not implemented")
   /*
   toIntermediate is given a label number, and assumes the block will set up the
   following labels for it:
