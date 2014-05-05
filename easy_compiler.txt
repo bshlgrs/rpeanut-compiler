@@ -47,7 +47,12 @@ variable_positions, map from names to (Relative | Global) x Int.
 
 - where variables live on the stack, or the shared memory area (or not on the stack)
 
-- a map describing whether variables are ever passed by reference.
+- a map describing whether variables are ever passed by reference anywhere in the function.
+
+The Block object has helper methods such as:
+  - isBasicallyDead(name), which tells us if a variable is never used again in a block
+
+
 
 To translate something like add x y z, I need to:
 
