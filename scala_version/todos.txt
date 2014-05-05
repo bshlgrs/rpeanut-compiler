@@ -1,0 +1,14 @@
+Todos:
+
+1. Parser
+all to do
+
+2. Compiler to intermediate needs:
+  - function calls
+  - deal with whole programs
+  - &lol
+  - return statement
+  - if expression
+
+3. Intermediate to assembly:
+all to do

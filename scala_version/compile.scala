@@ -7,6 +7,7 @@ import varOrLit._
 import interInstr._
 import counter.Counter
 import statement._
+import assemblyMaker._
 
 
 object Main extends App {
@@ -36,5 +37,8 @@ object Main extends App {
 
   println(moreComplexExampleCode)
   // println(StatementHelper.statementsToIntermediate(exampleCode).mkString("\n"))
-  println(moreComplexExampleCode.toIntermediate().mkString("\n"))
+  // println(moreComplexExampleCode.toIntermediate().mkString("\n"))
+
+  val blocks = AssemblyMaker.separateIntoBlocks(moreComplexExampleCode.toIntermediate())
+  println(blocks.mkString("\n"))
 }

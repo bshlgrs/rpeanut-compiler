@@ -1,0 +1,5 @@
+Stupidest register allocation system:
+
+- Choose a register for all real variables mentioned in the block. They live there. Load all of them.
+- Whenever you need a temp variable, pick a register which contains a temp variable which is never read again, and stick it there.
+- At the end of the block, store all the real variables in their places.

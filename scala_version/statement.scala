@@ -21,17 +21,18 @@ abstract class Statement {
 
 case class Assignment(name: String, rhs: Expr) extends Statement {
   override def toIntermediate(): List[InterInstr] = {
+    // This is wrong! It needs to replace the target everywhere, not just in the
+    // last line.
     var (exprInters, resultPlace) = rhs.toIntermediate()
-    // This is a silly way of doing this. It generates extraneous copy
-    // instructions.
-    CommentInter(this.toString()) +: exprInters :+ CopyInter(resultPlace, name)
+    var endInter = exprInters.last.changeTarget(name)
+    CommentInter(this.toString()) +: exprInters.dropRight(1) :+ endInter
   }
 }
 case class IndirectAssignment(lhs: Expr, rhs: Expr) extends Statement {
   override def toIntermediate(): List[InterInstr] = {
     val (lhsInstr, lhsVar) = lhs.toIntermediate()
     val (rhsInstr, rhsVar) = rhs.toIntermediate()
-    CommentInter(this.toString()) +: (lhsInstr ::: rhsInstr) :+ StoreInter(lhsVar.getVar(), rhsVar.getVar())
+    CommentInter(this.toString()) +: (lhsInstr ::: rhsInstr) :+ StoreInter(rhsVar.getVar(), lhsVar.getVar())
   }
 }
 
