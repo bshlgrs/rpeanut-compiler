@@ -15,24 +15,38 @@ abstract class Statement {
     case IfElse(condition, thenBlock, elseBlock) => ("if (" + condition.toString +
                 ") { \n"+thenBlock.mkString("\n") + "} \nelse {\n" +
                         elseBlock.mkString("\n") + "\n}")
+    case While(condition, block) => ("while (" + condition.toString + ") {\n" +
+                        block.mkString("\n") + "\n}")
+    case Return(thing) => thing match {
+      case Some(expr) => "return " + expr.toString + ";"
+      case None => "return;"
+    }
   }
   def toIntermediate(): List[InterInstr] = throw new Exception("not implemented")
 }
 
 case class Assignment(name: String, rhs: Expr) extends Statement {
   override def toIntermediate(): List[InterInstr] = {
-    // This is wrong! It needs to replace the target everywhere, not just in the
-    // last line.
     var (exprInters, resultPlace) = rhs.toIntermediate()
-    var endInter = exprInters.last.changeTarget(name)
-    CommentInter(this.toString()) +: exprInters.dropRight(1) :+ endInter
+
+    resultPlace match {
+      case VOLVar(x) => {
+        var changedInters = exprInters.map {_.changeTarget(x, name)}
+        CommentInter(this.toString()) +: changedInters
+      }
+      case VOLLit(n) => {
+        List(CopyInter(VOLLit(n), name))
+      }
+    }
+
   }
 }
 case class IndirectAssignment(lhs: Expr, rhs: Expr) extends Statement {
   override def toIntermediate(): List[InterInstr] = {
     val (lhsInstr, lhsVar) = lhs.toIntermediate()
     val (rhsInstr, rhsVar) = rhs.toIntermediate()
-    CommentInter(this.toString()) +: (lhsInstr ::: rhsInstr) :+ StoreInter(rhsVar.getVar(), lhsVar.getVar())
+    CommentInter(this.toString()) +: (lhsInstr ::: rhsInstr) :+
+                                    StoreInter(rhsVar.getVar(), lhsVar.getVar())
   }
 }
 
@@ -69,7 +83,18 @@ case class While(condition: BoolExpr, block: List[Statement]) extends Statement 
       List(JumpInter("while-" + counter.toString),
         CommentInter("}"),
         LabelInter("else-"+counter.toString)))
+  }
+}
 
+case class Return(value: Option[Expr]) extends Statement {
+  override def toIntermediate(): List[InterInstr] = value match {
+    case None => {
+      List(ReturnVoidInter)
+    }
+    case Some(expr) => {
+      val (exprCode, returnPlace) = expr.toIntermediate
+      (exprCode :+ ReturnWithValInter(returnPlace))
+    }
   }
 }
 

@@ -22,11 +22,26 @@ abstract class InterInstr {
     case _ => throw new Exception("unimplemented thing! oh god!")
   }
 
-  def changeTarget(newTarget: String):InterInstr = this match {
-    case BinOpInter(op, in1, in2, target) => BinOpInter(op, in1, in2, newTarget)
-    case LoadInter(source, target) => LoadInter(source, newTarget)
-    case CopyInter(source, target) => CopyInter(source, newTarget)
-    case _ => throw new Exception("No target to change!")
+  def changeTarget(oldTarget: String, newTarget: String):InterInstr = this match {
+    case BinOpInter(op, in1, in2, target) => {
+        if (target == oldTarget)
+            BinOpInter(op, in1, in2, newTarget)
+        else
+            this
+    }
+    case LoadInter(source, target) => {
+        if (target == oldTarget)
+            LoadInter(source, newTarget)
+        else
+            this
+        }
+    case CopyInter(source, target) => {
+        if (target == oldTarget)
+            CopyInter(source, newTarget)
+        else
+            this
+        }
+    case _ => this
   }
 }
 
@@ -44,4 +59,5 @@ case class CallWithValInter(name: String, args: List[VarOrLit], targetVar: Strin
                                                 extends InterInstr
 case class CallVoidInter(name: String, args: List[VarOrLit]) extends InterInstr
 case class CommentInter(comment: String) extends InterInstr
-
+case class ReturnWithValInter(value: VarOrLit) extends InterInstr
+case object ReturnVoidInter extends InterInstr

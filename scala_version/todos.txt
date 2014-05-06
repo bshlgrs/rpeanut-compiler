@@ -4,11 +4,11 @@ Todos:
 all to do
 
 2. Compiler to intermediate needs:
-  - function calls
+  - function calls DONE
   - deal with whole programs
   - &lol
   - return statement
-  - if expression
+  - if expression DONE
 
 3. Intermediate to assembly:
 all to do

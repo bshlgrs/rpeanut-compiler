@@ -3,13 +3,14 @@ package assemblyMaker
 import interInstr._
 import counter._
 import assembly._
+import varOrLit._
 
 class Block(name: String, code: List[InterInstr]) {
   override def toString(): String = {
     "Block " + name + "\n" + code.mkString("\n")
   }
 
-  def shittyAllocation(): List[Assembly] = throw new Exception("not implemented yet")
+  // def shittyAllocation(): List[Assembly] = throw new Exception("not implemented yet")
 }
 
 object AssemblyMaker {
@@ -35,25 +36,25 @@ object AssemblyMaker {
   }
 }
 
-class BlockAssembler(block: Block, locals: Map[String, Int]) {
+class BlockAssembler(locals: Map[String, Int]) {
   var registers = Array.fill[Option[VarOrLit]](10)(None)
-  var synched = Map[String, Boolean]()
+  var synched = collection.mutable.Map[String, Boolean]()
   var code = List[Assembly]()
   var position = 0 : Int
 
-  def assemble() = {
+  def assemble(block: Block): List[Assembly] = {
     for((inter, index : Int) <- block.code.view.zipWithIndex) {
       position = index // Can I do this more elegantly?
       inter match {
         case BinOpInter(op, in1, in2, out) => {
           if (out != in1 && out != in2)
-            deregister(out)
+            deregister(VOLVar(out))
 
           var r1 = getInputRegister(in1)
           var r2 = getInputRegister(in2)
 
           if (out == in1 || out == in2)
-            deregister(out)
+            deregister(VOLVar(out))
 
           var r3 = getOutputRegister(out)
           emit(ASM_BinOp(op, r1, r2, r3))
@@ -62,23 +63,26 @@ class BlockAssembler(block: Block, locals: Map[String, Int]) {
     }
   }
 
-  def deregister(name: VarOrLit) = {
-    if (registers contains Some(name)) {
-      val pos = registers indexOf Some(name)
-      if (isLocal(name) && !synched(name)) {
-        emitStore(name, pos)
-        synched(name) = true
+  def deregister(vol: VarOrLit) = vol match {
+    case VOLVar(name) => {
+      if (registers contains Some(name)) {
+        val pos = registers indexOf Some(name)
+        if (isLocal(name) && !synched(name)) {
+          emitStore(name, pos)
+        }
+        registers(pos) = None
       }
-      registers(pos) = None
+      else throw new Exception("trying to deregister variable which isn't in a register")
     }
-    else throw new Exception("trying to deregister variable which isn't in a register")
+    case VOLLit(num) => ()
   }
+
 
   def isLocal(name: String): Boolean = locals contains name
 
-  def getInputRegister(vol: VarOrLit): Int = {
+  def getInputRegister(vol: VarOrLit): Register = {
     if (registers contains Some(vol)) {
-      return registers indexOf Some(vol)
+      return GPRegister(registers indexOf Some(vol))
     }
     else {
       vol match {
@@ -88,7 +92,7 @@ class BlockAssembler(block: Block, locals: Map[String, Int]) {
             emitLoad(vol, register)
             registers(register) = Some(vol)
             synched(name) = true
-            return register
+            return GPRegister(register)
           } else {
             throw new Exception("You're referring to a temporary variable which isn't loaded."+
                                     " This is probably the compiler's fault, not yours.")
@@ -102,7 +106,7 @@ class BlockAssembler(block: Block, locals: Map[String, Int]) {
             case _ => {
               var register = getRegister()
               emitLoad(vol, register)
-              return register
+              return GPRegister(register)
             }
           }
         }
@@ -110,7 +114,7 @@ class BlockAssembler(block: Block, locals: Map[String, Int]) {
     }
   }
 
-  def getOutputRegister(name: String): Int = {
+  def getOutputRegister(name: String): Register = {
     var register = getRegister()
     registers(register) = Some(VOLVar(name))
 
@@ -121,7 +125,7 @@ class BlockAssembler(block: Block, locals: Map[String, Int]) {
     if (isLocal(name))
       synched(name) = false
 
-    register
+    GPRegister(register)
   }
 
   def getRegister(): Int = {
@@ -139,24 +143,21 @@ class BlockAssembler(block: Block, locals: Map[String, Int]) {
     for ((option_vol, index) <- registers.view.zipWithIndex) {
       option_vol match {
         // Check this: Can I do the two levels of matching in one thing?
-        case Some(name) => {
-          name match {
-            case VOLVar(name) => {
-              if (isLocal(name)) {
-                if (! synched(name))
-                  emitStore(name, index)
-                return index
-              }
+        case Some(VOLVar(name)) => {
+          if (isLocal(name)) {
+            if (! synched(name)) {
+              emitStore(name, index)
             }
-            case VOLLit(val) => {
-              return index
-            }
+            return index
           }
         }
+        case Some(VOLLit(num)) => return index
         case None => { throw new Exception("There is a weird bug in the code, "+
-                                          "this should never be reached...")}
+                                          "this should never be reached...")
+        }
       }
     }
+
     throw new Exception("Register limit exceeded!")
   }
 
@@ -164,9 +165,9 @@ class BlockAssembler(block: Block, locals: Map[String, Int]) {
     code = code :+ instr
   }
 
-  /// This doesn't fix the synching!
   def emitStore(name: String, index: Int) {
     emit(ASM_BPDStore(StackPointer, locals(name), GPRegister(index)))
+    synched(name) = true
   }
 
   def emitLoad(vol: VarOrLit, index: Int) {
@@ -175,7 +176,7 @@ class BlockAssembler(block: Block, locals: Map[String, Int]) {
         emit(ASM_BPDLoad(StackPointer, locals(name), GPRegister(index)))
       }
       case VOLLit(num) => {
-        emit(ASM_LoadIm(num), GPRegister(index))
+        emit(ASM_LoadIm(num, GPRegister(index)))
       }
     }
   }

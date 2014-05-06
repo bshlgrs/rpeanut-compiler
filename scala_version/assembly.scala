@@ -18,8 +18,8 @@ case class ASM_BPDLoad(source: Register, displacement: Int, target: Register)
 case class ASM_Load(location: Register, out: Register) extends Assembly
 case class ASM_LoadIm(num: Int, out: Register) extends Assembly
 case class ASM_Store(in: Register, location: Register) extends Assembly
-case class ASM_BPDStore(target: Register, displacement: Int, source: Register)
-case class ASM_Jump(label: String)
-case class ASM_Jumpz(in: Register, label: String)
-case class ASM_Jumpnz(in: Register, label: String)
-case class ASM_Jumpn(in: Register, label: String)
+case class ASM_BPDStore(target: Register, displacement: Int, source: Register) extends Assembly
+case class ASM_Jump(label: String) extends Assembly
+case class ASM_Jumpz(in: Register, label: String) extends Assembly
+case class ASM_Jumpnz(in: Register, label: String) extends Assembly
+case class ASM_Jumpn(in: Register, label: String) extends Assembly
