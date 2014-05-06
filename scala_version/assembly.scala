@@ -2,16 +2,16 @@ package assembly
 
 import binOperator._
 
-abstract class Register {
-  val comment : String;
-}
+abstract class Register
 case class GPRegister(n: Int) extends Register
 case object StackPointer extends Register
 case object OneRegister extends Register
 case object MOneRegister extends Register
 case object ZeroRegister extends Register
 
-abstract class Assembly
+abstract class Assembly {
+  val comment = "" : String;
+}
 
 case class ASM_BinOp(op: BinOperator, r1: Register, r2: Register, out: Register)
                                                           extends Assembly
@@ -26,3 +26,7 @@ case class ASM_Jumpz(in: Register, label: String) extends Assembly
 case class ASM_Jumpnz(in: Register, label: String) extends Assembly
 case class ASM_Jumpn(in: Register, label: String) extends Assembly
 case class ASM_Label(label: String) extends Assembly
+case class ASM_Push(reg: Register) extends Assembly
+case class ASM_Call(label: String) extends Assembly
+case object ASM_Return extends Assembly
+case class ASM_Comment(main_comment: String) extends Assembly
