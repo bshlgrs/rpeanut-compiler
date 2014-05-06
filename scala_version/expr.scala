@@ -40,7 +40,7 @@ abstract class Expr {
       rhsVar match {
         case VOLLit(_) => throw new Exception("illegal stuff")
         case VOLVar(n) => {
-          (rhsInstr :+ LoadInter(n, out), VOLVar(out))
+          (rhsInstr :+ LoadInter(VOLVar(n), out), VOLVar(out))
         }
       }
     }

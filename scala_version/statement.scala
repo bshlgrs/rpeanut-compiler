@@ -46,7 +46,7 @@ case class IndirectAssignment(lhs: Expr, rhs: Expr) extends Statement {
     val (lhsInstr, lhsVar) = lhs.toIntermediate()
     val (rhsInstr, rhsVar) = rhs.toIntermediate()
     CommentInter(this.toString()) +: (lhsInstr ::: rhsInstr) :+
-                                    StoreInter(rhsVar.getVar(), lhsVar.getVar())
+                                    StoreInter(rhsVar, lhsVar)
   }
 }
 

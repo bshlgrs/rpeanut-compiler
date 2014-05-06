@@ -59,7 +59,6 @@ class BlockAssembler(inCode: Block, locals: Map[String, Int]) {
           var r3 = getOutputRegister(out)
           emit(ASM_BinOp(op, r1, r2, r3))
         }
-        case
       }
     }
     code
@@ -131,6 +130,9 @@ class BlockAssembler(inCode: Block, locals: Map[String, Int]) {
   }
 
   def getRegister(): Int = {
+    // TODO: This function can be rewritten to be much cleverer and generate
+    // more efficient code.
+
     // vol : ValOrLit
     for ((option_vol, index) <- registers.view.zipWithIndex) {
       option_vol match {
@@ -144,7 +146,6 @@ class BlockAssembler(inCode: Block, locals: Map[String, Int]) {
 
     for ((option_vol, index) <- registers.view.zipWithIndex) {
       option_vol match {
-        // Check this: Can I do the two levels of matching in one thing?
         case Some(VOLVar(name)) => {
           if (isLocal(name)) {
             if (! synched(name)) {
@@ -157,7 +158,7 @@ class BlockAssembler(inCode: Block, locals: Map[String, Int]) {
         case None => { throw new Exception("There is a weird bug in the code, "+
                                           "this should never be reached...")
         }
-        case _ => ???
+        case _ => ??? // this should never happen, I just want the compiler to shut up
       }
     }
 
@@ -185,8 +186,19 @@ class BlockAssembler(inCode: Block, locals: Map[String, Int]) {
   }
 
   def isUnneeded(vol: VarOrLit): Boolean = {
-    // todo
-    throw new Exception("todo")
+    vol match {
+      case VOLLit(x) => true // This is a shitty temporary solution which is inefficient!
+      case VOLVar(name) => {
+        // loop through positions after the current position.
+        for(line <- inCode.code.drop(position)) {
+          if (line.inputVars contains VOLVar(name))
+            return false
+          else if (line.outputVars contains name)
+            return true
+        }
+        return true
+      }
+    }
   }
 }
 
