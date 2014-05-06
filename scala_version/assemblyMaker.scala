@@ -5,7 +5,7 @@ import counter._
 import assembly._
 import varOrLit._
 
-class Block(name: String, code: List[InterInstr]) {
+class Block(val name: String, val code: List[InterInstr]) {
   override def toString(): String = {
     "Block " + name + "\n" + code.mkString("\n")
   }
@@ -36,15 +36,15 @@ object AssemblyMaker {
   }
 }
 
-class BlockAssembler(locals: Map[String, Int]) {
+class BlockAssembler(inCode: Block, locals: Map[String, Int]) {
   var registers = Array.fill[Option[VarOrLit]](10)(None)
   var synched = collection.mutable.Map[String, Boolean]()
   var code = List[Assembly]()
   var position = 0 : Int
 
-  def assemble(block: Block): List[Assembly] = {
-    for((inter, index : Int) <- block.code.view.zipWithIndex) {
-      position = index // Can I do this more elegantly?
+  def assemble(): List[Assembly] = {
+    for((inter, index : Int) <- inCode.code.view.zipWithIndex) {
+      position = index // Can I do this more elegantly? More state is generally bad...
       inter match {
         case BinOpInter(op, in1, in2, out) => {
           if (out != in1 && out != in2)
@@ -59,8 +59,10 @@ class BlockAssembler(locals: Map[String, Int]) {
           var r3 = getOutputRegister(out)
           emit(ASM_BinOp(op, r1, r2, r3))
         }
+        case
       }
     }
+    code
   }
 
   def deregister(vol: VarOrLit) = vol match {
@@ -155,6 +157,7 @@ class BlockAssembler(locals: Map[String, Int]) {
         case None => { throw new Exception("There is a weird bug in the code, "+
                                           "this should never be reached...")
         }
+        case _ => ???
       }
     }
 
@@ -181,8 +184,9 @@ class BlockAssembler(locals: Map[String, Int]) {
     }
   }
 
-  def isUnneeded(vol: VarOrLit): Boolean {
+  def isUnneeded(vol: VarOrLit): Boolean = {
     // todo
+    throw new Exception("todo")
   }
 }
 

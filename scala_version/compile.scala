@@ -41,4 +41,5 @@ object Main extends App {
 
   val blocks = AssemblyMaker.separateIntoBlocks(moreComplexExampleCode.toIntermediate())
   println(blocks.mkString("\n"))
+
 }
