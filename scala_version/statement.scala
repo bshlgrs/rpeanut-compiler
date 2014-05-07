@@ -89,11 +89,11 @@ case class While(condition: BoolExpr, block: List[Statement]) extends Statement 
 case class Return(value: Option[Expr]) extends Statement {
   override def toIntermediate(): List[InterInstr] = value match {
     case None => {
-      List(ReturnVoidInter)
+      List(CommentInter(this.toString), ReturnVoidInter)
     }
     case Some(expr) => {
       val (exprCode, returnPlace) = expr.toIntermediate
-      (exprCode :+ ReturnWithValInter(returnPlace))
+      (List(CommentInter(this.toString)) ::: exprCode ::: List(ReturnWithValInter(returnPlace)))
     }
   }
 }

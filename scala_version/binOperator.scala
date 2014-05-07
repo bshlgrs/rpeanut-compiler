@@ -6,6 +6,12 @@ abstract class BinOperator {
     case MulOp => "*"
     case SubOp => "-"
   }
+
+  def toAssembly: String = this match {
+    case AddOp => "add"
+    case MulOp => "mul"
+    case SubOp => "sub"
+  }
 }
 
 case object AddOp extends BinOperator

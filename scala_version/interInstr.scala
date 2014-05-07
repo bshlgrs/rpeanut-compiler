@@ -13,13 +13,15 @@ abstract class InterInstr {
     case JumpInter(label) => "\tjump "+label
     case JumpZInter(label, sourceVar) => "\tjump "+label+" if 0 == "+sourceVar
     case JumpNZInter(label, sourceVar) => "\tjump "+label+" if 0 != "+sourceVar
-    case JumpNInter(label, sourceVar) => "\tjump "+label+" if 0 > "+sourceVar
-    case CallWithValInter(name, args, targetVar) => {
+    case JumpNInter(label, sourceVar) => "\tjump "+label +" if 0 > "+sourceVar
+    case CallWithValInter(name, args, targetVar) => { "\t"+
                     targetVar + " = " + name + args.mkString(", ") + ")"
     }
-    case CallVoidInter(name, args) => name + args.mkString(", ") + ")"
-    case CommentInter(comment) => "// " + comment
-    case _ => throw new Exception("unimplemented thing! oh god!")
+    case CallVoidInter(name, args) => "\t" + name + args.mkString(", ") + ")"
+    case CommentInter(comment) => "; " + comment
+    case ReturnVoidInter => "\treturn;"
+    case ReturnWithValInter(x) => "\treturn " + x.toString + ";"
+    case _ => ???
   }
 
   def changeTarget(oldTarget: String, newTarget: String):InterInstr = this match {
@@ -71,6 +73,7 @@ abstract class InterInstr {
     case _ => List()
   }
 
+  def allVars():List[String] = inputVars.map{_.varListIfVar()}.flatten ::: outputVars
 }
 
 case class BinOpInter(op: BinOperator, in1: VarOrLit, in2: VarOrLit, targetVar: String) extends InterInstr

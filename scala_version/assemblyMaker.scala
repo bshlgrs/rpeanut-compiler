@@ -4,11 +4,14 @@ import interInstr._
 import counter._
 import assembly._
 import varOrLit._
+import binOperator._
 
 class Block(val name: String, val code: List[InterInstr]) {
   override def toString(): String = {
-    "Block " + name + "\n" + code.mkString("\n")
+    "Block " + name + "\n" + "vars are " + varsMentioned.mkString(",") + "\n" + code.mkString("\n")
   }
+
+  val varsMentioned: List[String] = code.map(x => x.allVars()).flatten.distinct
 
   // def shittyAllocation(): List[Assembly] = throw new Exception("not implemented yet")
 }
@@ -26,12 +29,12 @@ object AssemblyMaker {
           labelName = name
           currentList = List()
         }
-        case CallWithValInter(name) => {
+        case CallWithValInter(_,_,_) => {
           output = output :+ new Block(labelName, currentList :+ line)
           labelName = labelName + "_"
           currentList = List()
         }
-        case CallVoidInter(name) => {
+        case CallVoidInter(_,_) => {
           output = output :+ new Block(labelName, currentList :+ line)
           labelName = labelName + "_"
           currentList = List()
@@ -46,14 +49,16 @@ object AssemblyMaker {
   }
 }
 
-class BlockAssembler(inCode: Block, locals: Map[String, Int]) {
+class BlockAssembler(block: Block, locals: Map[String, Int]) {
   var registers = Array.fill[Option[VarOrLit]](10)(None)
   var synched = collection.mutable.Map[String, Boolean]()
   var code = List[Assembly]()
   var position = 0 : Int
 
   def assemble(): List[Assembly] = {
-    for((inter, index : Int) <- inCode.code.view.zipWithIndex) {
+    emit(ASM_Label(block.name))
+
+    for((inter, index : Int) <- block.code.view.zipWithIndex) {
       position = index // Can I do this more elegantly? More state is generally bad...
       inter match {
         case BinOpInter(op, in1, in2, out) => {
@@ -106,24 +111,24 @@ class BlockAssembler(inCode: Block, locals: Map[String, Int]) {
           saveUnsynchedVariables()
           emit(ASM_Jump(label))
         }
-        case JumpZInter(label, var) => {
+        case JumpZInter(label, variable) => {
           saveUnsynchedVariables()
 
           // todo: static checks to determine if this is constant 0.
           // Maybe I should do that in the AST -> Intermediate conversion instead...
-          var r1 = getInputRegister(var)
-          emit(ASM_JumpZ(r1))
+          var r1 = getInputRegister(variable)
+          emit(ASM_JumpZ(r1, label))
 
         }
-        case JumpNZInter(label, var) => {
+        case JumpNZInter(label, variable) => {
           saveUnsynchedVariables()
-          var r1 = getInputRegister(var)
-          emit(ASM_JumpNZ(r1))
+          var r1 = getInputRegister(variable)
+          emit(ASM_JumpNZ(r1, label))
         }
-        case JumpNInter(label, var) => {
+        case JumpNInter(label, variable) => {
           saveUnsynchedVariables()
-          var r1 = getInputRegister(var)
-          emit(ASM_JumpN(r1))
+          var r1 = getInputRegister(variable)
+          emit(ASM_JumpN(r1, label))
         }
         case CallWithValInter(name, args, outputVar) => {
           saveUnsynchedVariables()
@@ -176,7 +181,6 @@ class BlockAssembler(inCode: Block, locals: Map[String, Int]) {
         }
         registers(pos) = None
       }
-      else throw new Exception("trying to deregister variable which isn't in a register")
     }
     case VOLLit(num) => ()
   }
@@ -293,7 +297,7 @@ class BlockAssembler(inCode: Block, locals: Map[String, Int]) {
       case VOLLit(x) => true // This is a shitty temporary solution which is inefficient!
       case VOLVar(name) => {
         // loop through positions after the current position.
-        for(line <- inCode.code.drop(position)) {
+        for(line <- block.code.drop(position)) {
           if (line.inputVars contains VOLVar(name))
             return false
           else if (line.outputVars contains name)
@@ -301,6 +305,18 @@ class BlockAssembler(inCode: Block, locals: Map[String, Int]) {
         }
         return true
       }
+    }
+  }
+
+  def saveUnsynchedVariables() = {
+    for ((optionVol, index) <- registers.view.zipWithIndex) optionVol match {
+      case Some(VOLVar(name)) => {
+        if (isLocal(name) && !synched(name)) {
+          emitStore(name, index)
+          synched(name) = true
+        }
+      }
+      case _ => ()
     }
   }
 }
