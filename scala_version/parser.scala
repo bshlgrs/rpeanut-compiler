@@ -3,6 +3,7 @@ import statement._
 import expr._
 import binOperator._
 import boolExpr._
+import function._
 
 class JSON extends JavaTokenParsers {
 
@@ -59,11 +60,14 @@ class CParser extends JavaTokenParsers {
                                         )
   def block: Parser[List[statement.Statement]] = ( "{"~> rep(stat) <~"}"
                                        | stat ^^ { List(_) })
+  def func: Parser[function.Function] = (
+            ("def")~ ident ~ "(" ~ repsep(ident,",") ~ ")" ~ block
+            ^^ {case _~name~_~args~_~bl => new function.Function(name, args, bl)})
 }
 
 object ParseExpr extends CParser {
   def main(args: Array[String]) {
     println("input : "+ args(0))
-    println(parseAll(stat, args(0)))
+    println(parseAll(func, args(0)))
   }
 }
