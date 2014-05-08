@@ -5,6 +5,7 @@ abstract class BinOperator {
     case AddOp => "+"
     case MulOp => "*"
     case SubOp => "-"
+    case DivOp => "/"
   }
 
   def toAssembly: String = this match {
@@ -17,3 +18,4 @@ abstract class BinOperator {
 case object AddOp extends BinOperator
 case object MulOp extends BinOperator
 case object SubOp extends BinOperator
+case object DivOp extends BinOperator

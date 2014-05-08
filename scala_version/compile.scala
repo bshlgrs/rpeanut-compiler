@@ -45,6 +45,7 @@ object Main extends App {
 
   val myFunction = new Function("addTwoNums", List("x","y"),
               List(
+                  statement.IfElse()
                   statement.Assignment("temp", BinOp(AddOp, Var("x"), Var("y"))),
                   Return(Some(Var("temp")))
                   )
