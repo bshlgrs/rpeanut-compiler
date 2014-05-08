@@ -49,6 +49,7 @@ class CParser extends JavaTokenParsers {
                                         | ">"  ^^ (x => GreaterThan))
 
   def stat: Parser[statement.Statement] = ("return"~";" ^^ (_ => Return(None))
+                                        | "return"~expr~";" ^^ {case _~e~_ => Return(Some(e))}
                                         | ident~"="~expr<~";" ^^ {case i~_~e => Assignment(i,e)}
                                         | "if"~ boolExpr~block~"else"~block
                                           ^^ {case _~b~i~_~e => IfElse(b,i,e) }
@@ -67,7 +68,9 @@ class CParser extends JavaTokenParsers {
 
 object ParseExpr extends CParser {
   def main(args: Array[String]) {
-    println("input : "+ args(0))
-    println(parseAll(func, args(0)))
+    parseAll(func, args(0)) match {
+      case Success(result, _) => println(result.toAssembly.mkString("\n"))
+      case x => println(x); ???
+    }
   }
 }

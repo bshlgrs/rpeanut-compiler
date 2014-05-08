@@ -36,6 +36,7 @@ class Function(name: String, params: List[String], body: List[Statement]) {
   }
 
   def toAssembly: List[Assembly] = {
+    ASM_Label(name) +:
     (for (block <- blocks) yield { new BlockAssembler(block, localsMap).assemble() }).flatten
   }
 }
