@@ -1,4 +1,5 @@
 import scala.util.parsing.combinator._
+import statement._
 import expr._
 import binOperator._
 import boolExpr._
@@ -28,11 +29,13 @@ class JSON extends JavaTokenParsers {
 
 class CParser extends JavaTokenParsers {
   def expr: Parser[Expr] = ("("~expr~op~expr~")" ^^ {case _~e1~op~e2~_ => BinOp(op, e1, e2)}
+                           // | ident~op~expr ^^ {case i~o~e => BinOp(o, Var(i), e) }
                            | ident~"["~expr~"]" ^^ {case i~_~e~_ => Load(BinOp(AddOp, Var(i), e))}
                            | boolExpr~"?"~expr~":"~expr ^^ { case i~_~t~_~e => IfExpression(i,t,e) }
                            | "*"~expr ^^ {case _~e1 => Load(e1) }
+                           | (ident ~ "("~ repsep(expr, ",")~")") ^^ { case x~_~a~_ => FunctionCall(x,a) }
                            | ident ^^ { Var(_) }
-                           | wholeNumber ^^ (x => Lit(x.toInt) )
+                           | wholeNumber ^^ (x => Lit(x.toInt))
                            )
 
   def boolExpr: Parser[BoolExpr] = "("~expr~boolOp~expr~")" ^^ {case _~e1~b~e2~_ => BoolBinOp(b,e1,e2)}
@@ -44,16 +47,23 @@ class CParser extends JavaTokenParsers {
   def boolOp: Parser[BoolBinOperator] = ( "==" ^^ (x => Equals)
                                         | ">"  ^^ (x => GreaterThan))
 
-  // val processTerm = (x => case (start~rest) => rest.foldList(start)
-  //         ((e1,tuple) => tuple match {
-  //           case ("*", e2) => BinOp(MulOp, e1, e2)
-  //           case ("/", e2) => BinOp(DivOp, e1, e2)
-  //         }))
+  def stat: Parser[statement.Statement] = ("return"~";" ^^ (_ => Return(None))
+                                        | ident~"="~expr<~";" ^^ {case i~_~e => Assignment(i,e)}
+                                        | "if"~ boolExpr~block~"else"~block
+                                          ^^ {case _~b~i~_~e => IfElse(b,i,e) }
+                                        | "if"~ boolExpr ~ block ^^ {case _~b~i => IfElse(b,i,Nil)}
+                                        | "while"~ boolExpr ~ block ^^ {case _~b~i => While(b,i)}
+                                        | "*"~expr~ "=" ~ expr~";" ^^ {case _~a~_~b~_ => IndirectAssignment(a,b)}
+                                        | ident~"["~expr~"]"~"="~expr~";" ^^
+                                            {case a~_~b~_~_~e~_ => IndirectAssignment(BinOp(AddOp,Var(a),b),e)}
+                                        )
+  def block: Parser[List[statement.Statement]] = ( "{"~> rep(stat) <~"}"
+                                       | stat ^^ { List(_) })
 }
 
 object ParseExpr extends CParser {
   def main(args: Array[String]) {
     println("input : "+ args(0))
-    println(parseAll(expr, args(0)))
+    println(parseAll(stat, args(0)))
   }
 }
