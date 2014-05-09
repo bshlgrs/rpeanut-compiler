@@ -1,4 +1,4 @@
-$ rPeANUt compiler
+# rPeANUt compiler
 
 This sorta compiles a language like C to rPeANUt assembly:
 
