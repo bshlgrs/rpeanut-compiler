@@ -17,6 +17,8 @@ class Function(name: String, params: List[String], body: List[Statement]) {
     out
   }
 
+  val returnPosition =
+
   val blocks: List[Block] = AssemblyMaker.separateIntoBlocks(toIntermediate)
 
   // Trust me, I write compilers, I know what I'm doing...

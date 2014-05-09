@@ -29,12 +29,7 @@ object AssemblyMaker {
           labelName = name
           currentList = List()
         }
-        case CallWithValInter(_,_,_) => {
-          output = output :+ new Block(labelName, currentList :+ line)
-          labelName = labelName + "_"
-          currentList = List()
-        }
-        case CallVoidInter(_,_) => {
+        case CallInter(_,_) => {
           output = output :+ new Block(labelName, currentList :+ line)
           labelName = labelName + "_"
           currentList = List()
@@ -133,32 +128,21 @@ class BlockAssembler(block: Block, locals: Map[String, Int], val returnPosition:
           var r1 = getInputRegister(variable)
           emit(ASM_JumpN(r1, label))
         }
-        case CallWithValInter(name, args, outputVar) => {
+        case CallInter(name, args) => {
           saveUnsynchedVariables()
           for (arg <- args) {
             // This is inefficient if a variable is used as an argument more than once.
             emit(ASM_Push(getInputRegister(arg)))
             deregister(arg)
           }
-          emit(ASM_Push(ZeroRegister)) // somewhere for the return value
           emit(ASM_Call(name))
-          emit(ASM_Pop(GPRegister(0)))
-
-          var r1 = getInputRegister(VOLLit(args.length))
-          emit(ASM_BinOp(SubOp, StackPointer, r1, StackPointer))
-          emitStore(outputVar, 0)
+          // this is obviously slightly inefficient
+          for (arg <- args) { emit(ASM_Pop(ZeroRegister)) }
         }
-        case CallVoidInter(name, args) => {
-          saveUnsynchedVariables()
-          for (arg <- args) {
-            // This is inefficient if a variable is used as an argument more than once.
-            emit(ASM_Push(getInputRegister(arg)))
-            deregister(arg)
-          }
-          emit(ASM_Call(name))
-          var r1 = getInputRegister(VOLLit(args.length))
-          // Pop a bunch of times
-          emit(ASM_BinOp(SubOp, StackPointer, r1, StackPointer))
+        case PushInter => emit(ASM_Push(ZeroRegister))
+        case PopInter(target) => {
+          var r = getOutputRegister(target)
+          emit(ASM_Pop(r))
         }
         case CommentInter(comment) => ASM_Comment(comment)
         case ReturnWithValInter(x) => {

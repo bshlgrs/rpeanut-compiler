@@ -49,8 +49,9 @@ abstract class Expr {
       val code = List.concat(for ((code, varOrLit) <- arg_code) yield code).flatten
       val vars = for ((code, varOrLit) <- arg_code) yield varOrLit
       val out = Counter.getTempVarName()
-      val callInstruction = CallWithValInter(name, vars, out)
-      (code :+ callInstruction, VOLVar(out)) /// CallWithValInter(name, vars, out)
+      val callInstruction = CallInter(name, vars)
+      var getValInstruction = PopInter(out)
+      (PushInter +: code :+ callInstruction :+ getValInstruction, VOLVar(out))
     }
     case IfExpression(condition, thenExpr, elseExpr) => {
       val newVal = Counter.getTempVarName()
