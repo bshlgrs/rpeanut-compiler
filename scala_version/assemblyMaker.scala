@@ -143,10 +143,9 @@ class BlockAssembler(block: Block, locals: Map[String, Int], val returnPosition:
           emit(ASM_Push(ZeroRegister)) // somewhere for the return value
           emit(ASM_Call(name))
           emit(ASM_Pop(GPRegister(0)))
+          emit(ASM_BinOp(SubOp, StackPointer, r1, StackPointer))
           emitStore(outputVar, 0)
           var r1 = getInputRegister(VOLLit(args.length))
-          // Pop a bunch of times
-          emit(ASM_BinOp(SubOp, StackPointer, r1, StackPointer))
         }
         case CallVoidInter(name, args) => {
           saveUnsynchedVariables()
@@ -288,8 +287,14 @@ class BlockAssembler(block: Block, locals: Map[String, Int], val returnPosition:
   }
 
   def emitStore(name: String, index: Int) {
-    emit(ASM_BPDStore(StackPointer, locals(name), GPRegister(index)))
-    synched(name) = true
+    if (locals contains name) {
+      emit(ASM_BPDStore(StackPointer, locals(name), GPRegister(index)))
+      synched(name) = true
+    }
+    else {
+      throw new Exception(s"Tried to emit store for $name, but it's not a local.\n"+
+                        "Locals are "+locals)
+    }
   }
 
   def emitLoad(vol: VarOrLit, index: Int) {

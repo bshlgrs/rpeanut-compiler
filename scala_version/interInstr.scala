@@ -15,9 +15,9 @@ abstract class InterInstr {
     case JumpNZInter(label, sourceVar) => "\tjump "+label+" if 0 != "+sourceVar
     case JumpNInter(label, sourceVar) => "\tjump "+label +" if 0 > "+sourceVar
     case CallWithValInter(name, args, targetVar) => { "\t"+
-                    targetVar + " = " + name + args.mkString(", ") + ")"
+                    targetVar + " = " + name + "("+ args.mkString(", ") + ")"
     }
-    case CallVoidInter(name, args) => "\t" + name + args.mkString(", ") + ")"
+    case CallVoidInter(name, args) => "\t" + name + "(" + args.mkString(", ") + ")"
     case CommentInter(comment) => "; " + comment
     case ReturnVoidInter => "\treturn;"
     case ReturnWithValInter(x) => "\treturn " + x.toString + ";"
@@ -43,6 +43,13 @@ abstract class InterInstr {
       else
         this
       }
+    case CallWithValInter(name, args, target) => {
+      if (target == oldTarget)
+        CallWithValInter(name, args, newTarget)
+      else
+        this
+      }
+
     case _ => this
   }
 

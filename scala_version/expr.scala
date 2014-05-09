@@ -50,7 +50,7 @@ abstract class Expr {
       val vars = for ((code, varOrLit) <- arg_code) yield varOrLit
       val out = Counter.getTempVarName()
       val callInstruction = CallWithValInter(name, vars, out)
-      (code, VOLVar(out)) /// CallWithValInter(name, vars, out)
+      (code :+ callInstruction, VOLVar(out)) /// CallWithValInter(name, vars, out)
     }
     case IfExpression(condition, thenExpr, elseExpr) => {
       val newVal = Counter.getTempVarName()
