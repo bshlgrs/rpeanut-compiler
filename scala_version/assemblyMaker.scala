@@ -143,9 +143,10 @@ class BlockAssembler(block: Block, locals: Map[String, Int], val returnPosition:
           emit(ASM_Push(ZeroRegister)) // somewhere for the return value
           emit(ASM_Call(name))
           emit(ASM_Pop(GPRegister(0)))
+
+          var r1 = getInputRegister(VOLLit(args.length))
           emit(ASM_BinOp(SubOp, StackPointer, r1, StackPointer))
           emitStore(outputVar, 0)
-          var r1 = getInputRegister(VOLLit(args.length))
         }
         case CallVoidInter(name, args) => {
           saveUnsynchedVariables()
