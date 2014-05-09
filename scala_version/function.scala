@@ -35,7 +35,7 @@ class Function(name: String, params: List[String], body: List[Statement]) {
     }
 
     for ((x:String, i:Int) <- localVars.view.zipWithIndex) {
-      dict(x) = i
+      dict(x) = i + 1
     }
 
     dict.toMap

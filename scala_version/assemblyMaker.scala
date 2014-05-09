@@ -56,8 +56,6 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
     emit(ASM_Label(block.name))
 
     for((inter, index : Int) <- block.code.view.zipWithIndex) {
-    //  println("register allocation is "+registers.mkString(","))
-    //  println("looking at "+inter.toString)
       position = index // Can I do this more elegantly? More state is generally bad...
 
       inter match {
@@ -135,7 +133,7 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
           saveUnsynchedVariables()
 
           // this emits something which can often be optimized out
-          emit(ASM_BinOp(AddOp, getInputRegister(VOLLit(localsSize)), StackPointer, StackPointer))
+          emit(ASM_BinOp(AddOp, getInputRegister(VOLLit(localsSize + 1)), StackPointer, StackPointer))
 
 
           for (arg <- args) {
@@ -145,7 +143,7 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
           }
           emit(ASM_Call(name))
 
-          emit(ASM_BinOp(SubOp, getInputRegister(VOLLit(localsSize)), StackPointer, StackPointer))
+          emit(ASM_BinOp(SubOp, getInputRegister(VOLLit(localsSize + 1)), StackPointer, StackPointer))
           // this is obviously slightly inefficient
           for (arg <- args) { emit(ASM_Pop(ZeroRegister)) }
         }
@@ -154,15 +152,18 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
           var r = getOutputRegister(target)
           emit(ASM_Pop(r))
         }
-        case CommentInter(comment) => ASM_Comment(comment)
+        case CommentInter(comment) => emit(ASM_Comment(comment))
         case ReturnWithValInter(x) => {
-          emit(ASM_BPDStore(StackPointer, returnPosition match {case Some(x) => x; case _ => ???},
-                                         getInputRegister(x)))
+          emit(ASM_BPDStore(getInputRegister(x),
+                  returnPosition match {case Some(x) => x; case _ => ???},
+                  StackPointer))
           emit(ASM_Return)
         }
         case ReturnVoidInter => emit(ASM_Return)
       }
     }
+    saveUnsynchedVariables()
+
     code
   }
 
@@ -173,6 +174,7 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
         val pos = registers indexOf Some(name)
         if (isLocal(name) && !synched(name)) {
           emitStore(name, pos)
+          synched(name) = true
         }
         registers(pos) = None
       }
@@ -225,17 +227,22 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
   }
 
   def getOutputRegister(name: String): Register = {
-    var register = getRegister()
-    registers(register) = Some(VOLVar(name))
+    if (registers contains Some(VOLVar(name))) {
+      println("maybe something weird is going on, this shouldn't be here")
+      return GPRegister(registers indexOf Some(VOLVar(name)))
+    } else {
+      var register = getRegister()
+      registers(register) = Some(VOLVar(name))
 
     // Requesting a place to save a new value to a register means that it's about
     // to be overwritten in the register, which means it will get out of sync
     // with the value on the stack, if it has a place to live on the stack (ie
     // is local).
-    if (isLocal(name))
-      synched(name) = false
+      if (isLocal(name))
+        synched(name) = false
 
-    GPRegister(register)
+      GPRegister(register)
+    }
   }
 
   def getRegister(): Int = {
@@ -280,7 +287,7 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
 
   def emitStore(name: String, index: Int) {
     if (locals contains name) {
-      emit(ASM_BPDStore(StackPointer, locals(name), GPRegister(index)))
+      emit(ASM_BPDStore(GPRegister(index), locals(name), StackPointer))
       synched(name) = true
     }
     else {

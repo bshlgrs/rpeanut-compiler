@@ -10,7 +10,7 @@ abstract class BinOperator {
 
   def toAssembly: String = this match {
     case AddOp => "add"
-    case MulOp => "mul"
+    case MulOp => "mult"
     case SubOp => "sub"
   }
 }

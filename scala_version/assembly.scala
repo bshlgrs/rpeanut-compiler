@@ -42,7 +42,7 @@ abstract class Assembly {
     case ASM_Pop(out) => s"pop $out"
     case ASM_Call(label) => s"call $label"
     case ASM_Return => "return"
-    case ASM_Comment(main_comment) => "; $main_comment"
+    case ASM_Comment(main_comment) => s"; $main_comment"
     case _ => "dafsdsa"
   }
 }

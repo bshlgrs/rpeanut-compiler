@@ -76,9 +76,13 @@ case class While(condition: BoolExpr, block: List[Statement]) extends Statement 
     val counter = Counter.getCounter();
     val conditionCode = condition.toIntermediate(counter) : List[InterInstr]
 
+    val blockCode = (for (line <- block) yield line.toIntermediate).flatten
+
     (List(CommentInter("while ("+ condition.toString + ") {"),
          LabelInter("while-" + counter.toString)) :::
-      conditionCode :::
+      (conditionCode :+
+             CommentInter("while-loop-" + counter.toString + "-body")) :::
+      blockCode :::
       List(JumpInter("while-" + counter.toString),
         CommentInter("}"),
         LabelInter("else-"+counter.toString)))
