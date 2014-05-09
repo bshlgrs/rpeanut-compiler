@@ -28,4 +28,12 @@ end-1:
 
 ```
 
-It's not very fully featured, but it's coming along!
+It's not very fully featured, but it's coming along slowly!
+
+## Things that do work
+
+## Incomplete list of things that don't work
+- Ternary operator
+- Positions of variables on the stack are all made up and don't correspond much to reality
+- Global variables
+- String literals or array literals
