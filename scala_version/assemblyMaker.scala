@@ -49,7 +49,7 @@ object AssemblyMaker {
   }
 }
 
-class BlockAssembler(block: Block, locals: Map[String, Int]) {
+class BlockAssembler(block: Block, locals: Map[String, Int], val returnPosition: Option[Int]) {
   var registers = Array.fill[Option[VarOrLit]](10)(None)
   var synched = collection.mutable.Map[String, Boolean]()
   var code = List[Assembly]()
@@ -59,7 +59,10 @@ class BlockAssembler(block: Block, locals: Map[String, Int]) {
     emit(ASM_Label(block.name))
 
     for((inter, index : Int) <- block.code.view.zipWithIndex) {
+    //  println("register allocation is "+registers.mkString(","))
+    //  println("looking at "+inter.toString)
       position = index // Can I do this more elegantly? More state is generally bad...
+
       inter match {
         case BinOpInter(op, in1, in2, out) => {
           if (out != in1 && out != in2)
@@ -159,7 +162,8 @@ class BlockAssembler(block: Block, locals: Map[String, Int]) {
         }
         case CommentInter(comment) => ASM_Comment(comment)
         case ReturnWithValInter(x) => {
-          emit(ASM_BPDStore(StackPointer, -1, getInputRegister(x)))
+          emit(ASM_BPDStore(StackPointer, returnPosition match {case Some(x) => x; case _ => ???},
+                                         getInputRegister(x)))
           // Do I need to save unsynched variables here? I'm okay with telling
           // people that their variables are inaccessible once they've returned
           // from a function.
@@ -185,6 +189,7 @@ class BlockAssembler(block: Block, locals: Map[String, Int]) {
     case VOLLit(num) => ()
   }
 
+  def currentLine() : InterInstr = block.code(position)
 
   def isLocal(name: String): Boolean = locals contains name
 
@@ -203,7 +208,11 @@ class BlockAssembler(block: Block, locals: Map[String, Int]) {
             return GPRegister(register)
           } else {
             throw new Exception("You're referring to a temporary variable which isn't loaded."+
-                                    " This is probably the compiler's fault, not yours.")
+                                    " This is probably the compiler's fault, not yours.\n"+
+                                    "The variable is "+name +", and the current allocation is:\n"+
+                                    registers.mkString(",")+"\n\n"+
+                                   "Here's the block that I was compiling: \n"+block.toString +
+                                   "\n\nI was up to line "+position+"\nLocals are "+locals.toString)
           }
         }
         case VOLLit(num) => {
@@ -214,9 +223,11 @@ class BlockAssembler(block: Block, locals: Map[String, Int]) {
             case _ => {
               var register = getRegister()
               emitLoad(vol, register)
+              registers(register) = Some(vol)
               return GPRegister(register)
             }
           }
+
         }
       }
     }
@@ -294,7 +305,8 @@ class BlockAssembler(block: Block, locals: Map[String, Int]) {
 
   def isUnneeded(vol: VarOrLit): Boolean = {
     vol match {
-      case VOLLit(x) => true // This is a shitty temporary solution which is inefficient!
+       // This is a shitty temporary solution which will sometimes break everything!
+      case VOLLit(x) => false //currentLine().inputVars contains vol
       case VOLVar(name) => {
         // loop through positions after the current position.
         for(line <- block.code.drop(position)) {

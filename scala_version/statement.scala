@@ -22,13 +22,13 @@ abstract class Statement {
       case None => "return;"
     }
   }
-  def toIntermediate(): List[InterInstr] = throw new Exception("not implemented")
+  def toIntermediate(): List[InterInstr]
 }
 
 case class Assignment(name: String, rhs: Expr) extends Statement {
   override def toIntermediate(): List[InterInstr] = {
     var (exprInters, resultPlace) = rhs.toIntermediate()
-
+    println(this.toString + ": exprInters is "+exprInters.toString)
     resultPlace match {
       case VOLVar(x) => {
         var changedInters = exprInters.map {_.changeTarget(x, name)}

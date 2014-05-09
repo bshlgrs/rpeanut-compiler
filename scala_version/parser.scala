@@ -69,8 +69,11 @@ class CParser extends JavaTokenParsers {
 object ParseExpr extends CParser {
   def main(args: Array[String]) {
     parseAll(func, args(0)) match {
-      case Success(result, _) => println(result.toAssembly.mkString("\n"))
-      case x => println(x); ???
+      case Success(result, _) => {
+        println(result.blocks.mkString("\n"))
+        println(result.toAssembly.mkString("\n"))
+      }
+      case x => println("Parse error"); println(x)
     }
   }
 }
