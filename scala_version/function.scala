@@ -17,9 +17,9 @@ class Function(name: String, params: List[String], body: List[Statement]) {
     out
   }
 
-  val returnPosition =
-
   val blocks: List[Block] = AssemblyMaker.separateIntoBlocks(toIntermediate)
+
+  val returnPosition = - params.length - 1
 
   // Trust me, I write compilers, I know what I'm doing...
   val localVars: List[String] =  {
@@ -30,7 +30,11 @@ class Function(name: String, params: List[String], body: List[Statement]) {
   val localsMap: Map[String, Int] = {
     var dict = collection.mutable.Map[String, Int]()
 
-    for ((x:String, i:Int) <- (params ::: localVars).view.zipWithIndex) {
+    for ((x:String, i:Int) <- params.view.zipWithIndex) {
+      dict(x) = i - params.length
+    }
+
+    for ((x:String, i:Int) <- localVars.view.zipWithIndex) {
       dict(x) = i
     }
 
@@ -39,6 +43,11 @@ class Function(name: String, params: List[String], body: List[Statement]) {
 
   def toAssembly: List[Assembly] = {
     ASM_Label(name) +:
-    (for (block <- blocks) yield { new BlockAssembler(block, localsMap, Some(0)).assemble() }).flatten
+    (for (block <- blocks) yield { new
+                    BlockAssembler(block,
+                                   localsMap,
+                                   Some(returnPosition),
+                                   localVars.length)
+                                      .assemble() }).flatten
   }
 }

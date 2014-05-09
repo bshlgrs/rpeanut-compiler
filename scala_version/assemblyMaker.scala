@@ -44,7 +44,9 @@ object AssemblyMaker {
   }
 }
 
-class BlockAssembler(block: Block, locals: Map[String, Int], val returnPosition: Option[Int]) {
+class BlockAssembler(block: Block, locals: Map[String, Int],
+                                  val returnPosition: Option[Int],
+                                        val localsSize: Int) {
   var registers = Array.fill[Option[VarOrLit]](10)(None)
   var synched = collection.mutable.Map[String, Boolean]()
   var code = List[Assembly]()
@@ -99,7 +101,8 @@ class BlockAssembler(block: Block, locals: Map[String, Int], val returnPosition:
             case VOLVar(n) => {
               var r1 = getInputRegister(source)
               var r2 = getOutputRegister(target)
-              // the next line is very unrealistic for a real microprocessor, but yolo
+              // the next line is very unrealistic for a real microprocessor, but yolo.
+              //         (mainly because I cbf implementing the copy instruction)
               emit(ASM_BinOp(AddOp, ZeroRegister, r1, r2))
             }
           }
@@ -130,12 +133,19 @@ class BlockAssembler(block: Block, locals: Map[String, Int], val returnPosition:
         }
         case CallInter(name, args) => {
           saveUnsynchedVariables()
+
+          // this emits something which can often be optimized out
+          emit(ASM_BinOp(AddOp, getInputRegister(VOLLit(localsSize)), StackPointer, StackPointer))
+
+
           for (arg <- args) {
             // This is inefficient if a variable is used as an argument more than once.
             emit(ASM_Push(getInputRegister(arg)))
             deregister(arg)
           }
           emit(ASM_Call(name))
+
+          emit(ASM_BinOp(SubOp, getInputRegister(VOLLit(localsSize)), StackPointer, StackPointer))
           // this is obviously slightly inefficient
           for (arg <- args) { emit(ASM_Pop(ZeroRegister)) }
         }
