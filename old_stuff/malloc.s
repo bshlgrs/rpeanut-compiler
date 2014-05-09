@@ -10,7 +10,7 @@
 
 ; Malloc and free are both constant time.
 
-; Edward Swernofsky came up with this algorithm, I just
+; My friend Ed Swernofsky came up with this algorithm, I just
 ; implemented it.
 
 ; You can see a C version at https://github.com/BuckShlegeris/rpeanut-compiler/blob/master/ed's_malloc.c
@@ -49,10 +49,10 @@ malloc:
 
 	store R0 #-1 SP; return the malloc'd location
 
-	jumpn R1 malloc_move_frontier ; if next >= 0 
-	
+	jumpn R1 malloc_move_frontier ; if next >= 0
+
 	store R1 next;
-	
+
 	return
 
 malloc_move_frontier:
@@ -61,15 +61,15 @@ malloc_move_frontier:
 
 	sub R3 R2 R3
 	jumpz R3 memory_overflow
-	
+
 	store R2 next; next = frontier
 	store MONE R2; heap[next] = -1;
 	add R2 ONE R2; frontier ++
 	store R2 frontier;
-	
+
 	return;
-	
-	
+
+
 ; print "error: memory overflow" and exit
 memory_overflow:
   load #'m' R0
