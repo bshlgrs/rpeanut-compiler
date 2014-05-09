@@ -72,9 +72,9 @@ object Compile extends CParser {
   def main(args: Array[String]) {
     parseAll(func, args(0)) match {
       case Success(result, _) => {
-        println("Blocks are:")
-        println(result.blocks.mkString("\n"))
-        println("\n\nAssembly is:")
+        // println("Blocks are:")
+        // println(result.blocks.mkString("\n"))
+        // println("\n\nAssembly is:")
         println(result.toAssembly.mkString("\n"))
       }
       case x => println("Parse error"); println(x)

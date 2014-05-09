@@ -54,7 +54,8 @@ case class IfElse(condition: BoolExpr,
                   elseBlock: List[Statement]) extends Statement {
   override def toIntermediate(): List[InterInstr] = {
     val counter = Counter.getCounter();
-    val conditionCode = condition.toIntermediate(counter) : List[InterInstr]
+    val conditionCode = condition.toIntermediate("then-"+counter.toString,
+                                            "else-"+counter.toString) : List[InterInstr]
     val thenCode = StatementHelper.statementsToIntermediate(thenBlock)
     val elseCode = StatementHelper.statementsToIntermediate(elseBlock)
 
@@ -74,18 +75,19 @@ case class IfElse(condition: BoolExpr,
 case class While(condition: BoolExpr, block: List[Statement]) extends Statement {
   override def toIntermediate(): List[InterInstr] = {
     val counter = Counter.getCounter();
-    val conditionCode = condition.toIntermediate(counter) : List[InterInstr]
+    val conditionCode = condition.toIntermediate("while-loop-" + counter.toString + "-body",
+                                          "endWhile-"+counter.toString) : List[InterInstr]
 
     val blockCode = (for (line <- block) yield line.toIntermediate).flatten
 
     (List(CommentInter("while ("+ condition.toString + ") {"),
          LabelInter("while-" + counter.toString)) :::
       (conditionCode :+
-             CommentInter("while-loop-" + counter.toString + "-body")) :::
+             LabelInter("while-loop-" + counter.toString + "-body")) :::
       blockCode :::
       List(JumpInter("while-" + counter.toString),
         CommentInter("}"),
-        LabelInter("else-"+counter.toString)))
+        LabelInter("endWhile-"+counter.toString)))
   }
 }
 

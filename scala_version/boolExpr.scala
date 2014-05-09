@@ -13,7 +13,7 @@ abstract class BoolExpr {
     case OrExpr(lhs, rhs) => "("+ lhs.toString + " || " + rhs.toString + ")"
   }
 
-  def toIntermediate(labelNumber: Int): List[InterInstr] = throw new Exception("not implemented")
+  def toIntermediate(thenLabel: String, elseLabel: String): List[InterInstr] = ???
   /*
   toIntermediate is given a label number, and assumes the block will set up the
   following labels for it:
@@ -26,18 +26,22 @@ abstract class BoolExpr {
 }
 
 case class BoolBinOp(op: BoolBinOperator, lhs: Expr, rhs: Expr) extends BoolExpr {
-  override def toIntermediate(labelNumber: Int): List[InterInstr] = {
+  override def toIntermediate(thenLabel: String, elseLabel: String): List[InterInstr] = {
     val (lhsCode, lhsResult) = lhs.toIntermediate()
     val (rhsCode, rhsResult) = rhs.toIntermediate()
     val outputVar = Counter.getTempVarName()
-    val subtractInstr = BinOpInter(SubOp, lhsResult, rhsResult, outputVar)
 
-    val comparisonInstr = op match {
-      case Equals => JumpNZInter("else-" + labelNumber.toString, VOLVar(outputVar))
-      case GreaterThan => JumpNInter("else-" + labelNumber.toString, VOLVar(outputVar))
+    val comparisonInstrs: List[InterInstr] = op match {
+      case Equals => List(BinOpInter(SubOp, lhsResult, rhsResult, outputVar),
+                          JumpNZInter(elseLabel, VOLVar(outputVar)),
+                          JumpInter(thenLabel))
+
+      case GreaterThan => List(BinOpInter(SubOp, rhsResult, lhsResult, outputVar),
+                               JumpNInter(thenLabel, VOLVar(outputVar)),
+                               JumpInter(elseLabel))
     }
 
-    (lhsCode ::: rhsCode ::: List[InterInstr](subtractInstr, comparisonInstr))
+    (lhsCode ::: rhsCode ::: comparisonInstrs)
   }
 }
 

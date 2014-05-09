@@ -60,28 +60,15 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
 
       inter match {
         case BinOpInter(op, in1, in2, out) => {
-          if (out != in1 && out != in2)
-            deregister(VOLVar(out))
-
           var r1 = getInputRegister(in1)
           var r2 = getInputRegister(in2)
-
-          if (out == in1 || out == in2)
-            deregister(VOLVar(out))
 
           var r3 = getOutputRegister(out)
           emit(ASM_BinOp(op, r1, r2, r3))
         }
         // target = *source
         case LoadInter(source, target) => {
-          if (source != VOLVar(target))
-            deregister(VOLVar(target))
-
           var r1 = getInputRegister(source)
-
-          if (source == VOLVar(target))
-            deregister(VOLVar(target))
-
           var r2 = getOutputRegister(target)
           emit(ASM_Load(r1, r2))
         }
@@ -227,8 +214,8 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
   }
 
   def getOutputRegister(name: String): Register = {
+    synched(name) = false
     if (registers contains Some(VOLVar(name))) {
-      println("maybe something weird is going on, this shouldn't be here")
       return GPRegister(registers indexOf Some(VOLVar(name)))
     } else {
       var register = getRegister()
@@ -238,8 +225,6 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
     // to be overwritten in the register, which means it will get out of sync
     // with the value on the stack, if it has a place to live on the stack (ie
     // is local).
-      if (isLocal(name))
-        synched(name) = false
 
       GPRegister(register)
     }
