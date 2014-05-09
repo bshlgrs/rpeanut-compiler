@@ -8,7 +8,7 @@ import binOperator._
 
 class Block(val name: String, val code: List[InterInstr]) {
   override def toString(): String = {
-    "Block " + name + "\n" + "vars are " + varsMentioned.mkString(",") + "\n" + code.mkString("\n")
+    "Block " + name + "\n" + code.mkString("\n")
   }
 
   val varsMentioned: List[String] = code.map(x => x.allVars()).flatten.distinct
@@ -164,9 +164,6 @@ class BlockAssembler(block: Block, locals: Map[String, Int], val returnPosition:
         case ReturnWithValInter(x) => {
           emit(ASM_BPDStore(StackPointer, returnPosition match {case Some(x) => x; case _ => ???},
                                          getInputRegister(x)))
-          // Do I need to save unsynched variables here? I'm okay with telling
-          // people that their variables are inaccessible once they've returned
-          // from a function.
           emit(ASM_Return)
         }
         case ReturnVoidInter => emit(ASM_Return)
@@ -208,11 +205,11 @@ class BlockAssembler(block: Block, locals: Map[String, Int], val returnPosition:
             return GPRegister(register)
           } else {
             throw new Exception("You're referring to a temporary variable which isn't loaded."+
-                                    " This is probably the compiler's fault, not yours.\n"+
-                                    "The variable is "+name +", and the current allocation is:\n"+
-                                    registers.mkString(",")+"\n\n"+
-                                   "Here's the block that I was compiling: \n"+block.toString +
-                                   "\n\nI was up to line "+position+"\nLocals are "+locals.toString)
+                                " This is probably the compiler's fault, not yours.\n"+
+                                "The variable is "+name +", and the current allocation is:\n"+
+                                registers.mkString(",")+"\n\n"+
+                                "Here's the block that I was compiling: \n"+block.toString +
+                                "\n\nI was up to line "+position+"\nLocals are "+locals.toString)
           }
         }
         case VOLLit(num) => {

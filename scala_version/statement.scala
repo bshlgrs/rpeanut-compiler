@@ -28,7 +28,6 @@ abstract class Statement {
 case class Assignment(name: String, rhs: Expr) extends Statement {
   override def toIntermediate(): List[InterInstr] = {
     var (exprInters, resultPlace) = rhs.toIntermediate()
-    println(this.toString + ": exprInters is "+exprInters.toString)
     resultPlace match {
       case VOLVar(x) => {
         var changedInters = exprInters.map {_.changeTarget(x, name)}
