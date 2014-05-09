@@ -66,7 +66,7 @@ class CParser extends JavaTokenParsers {
             ^^ {case _~name~_~args~_~bl => new function.Function(name, args, bl)})
 }
 
-object ParseExpr extends CParser {
+object Compile extends CParser {
   def main(args: Array[String]) {
     parseAll(func, args(0)) match {
       case Success(result, _) => {
