@@ -1,29 +1,29 @@
-import org.jboss.netty.handler.codec.http.{HttpRequest, HttpResponse}
-import com.twitter.finagle.builder.ServerBuilder
-import com.twitter.finagle.http.{Http, Response}
 import com.twitter.finagle.Service
+import com.twitter.finagle.http.Http
 import com.twitter.util.Future
-import java.net.InetSocketAddress
-import util.Properties
+import org.jboss.netty.handler.codec.http.{DefaultHttpResponse, HttpVersion, HttpResponseStatus, HttpRequest, HttpResponse}
+import java.net.{SocketAddress, InetSocketAddress}
+import com.twitter.finagle.builder.{Server, ServerBuilder}
 
 object Web {
   def main(args: Array[String]) {
-    val port = Properties.envOrElse("PORT", "8080").toInt
-    println("Starting on port:"+port)
-    ServerBuilder()
+    val rootService = new Service[HttpRequest, HttpResponse] {
+      def apply(request: HttpRequest) = {
+        val r = request.getUri match {
+          case "/" => new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK)
+          case _ => new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND)
+        }
+        Future.value(r)
+      }
+    }
+
+    // Serve our service on a port
+    val address: SocketAddress = new InetSocketAddress(10000)
+    val server: Server = ServerBuilder()
       .codec(Http())
-      .name("hello-server")
-      .bindTo(new InetSocketAddress(port))
-      .build(new Hello)
-    println("Started.")
+      .bindTo(address)
+      .name("HttpServer")
+      .build(rootService)
   }
 }
 
-class Hello extends Service[HttpRequest, HttpResponse] {
-  def apply(req: HttpRequest): Future[HttpResponse] = {
-    val response = Response()
-    response.setStatusCode(200)
-    response.setContentString("Hello World")
-    Future(response)
-  }
-}
