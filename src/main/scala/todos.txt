@@ -1,0 +1,15 @@
+Todos:
+
+1. Parser
+all to do
+
+2. Compiler to intermediate needs:
+  - function calls DONE
+  - deal with whole programs
+  - &lol
+  - return statement
+  - if expression DONE
+  - division
+
+3. Intermediate to assembly:
+throw new Exception("unimplemented")

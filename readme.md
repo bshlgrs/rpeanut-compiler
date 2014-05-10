@@ -34,6 +34,10 @@ It's not very fully featured, but it's coming along slowly!
 
 ## Incomplete list of things that don't work
 - Ternary operator
-- Positions of variables on the stack are all made up and don't correspond much to reality
+- Positions of variables on the stack are slightly inaccurate, I think
 - Global variables
 - String literals or array literals
+
+
+## Notes
+- I don't promise to calculate expressions in the order they were inputted.
