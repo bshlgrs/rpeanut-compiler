@@ -2,7 +2,7 @@ package assembly
 
 import binOperator._
 
-abstract class Register {
+sealed abstract class Register {
   override def toString = this match {
     case GPRegister(n) => "R" + n.toString
     case StackPointer => "SP"
@@ -42,6 +42,7 @@ abstract class Assembly {
     case ASM_Pop(out) => "pop " + out
     case ASM_Call(label) => "call " + label
     case ASM_Return => "return"
+    case ASM_Halt => "halt"
     case ASM_Comment(main_comment) => "; " + main_comment
     case _ => throw new Exception("unimplemented")
   }
@@ -64,4 +65,5 @@ case class ASM_Push(reg: Register) extends Assembly
 case class ASM_Pop(reg: Register) extends Assembly
 case class ASM_Call(label: String) extends Assembly
 case object ASM_Return extends Assembly
+case object ASM_Halt extends Assembly
 case class ASM_Comment(main_comment: String) extends Assembly

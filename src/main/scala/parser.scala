@@ -72,12 +72,17 @@ class CParser extends JavaTokenParsers {
 
 object Compile extends CParser {
   def main(args: Array[String]) {
-    parseAll(func, args(0)) match {
+    parseAll(program, io.Source.fromFile(args(0)).mkString) match {
       case Success(result, _) => {
-        // println("Blocks are:")
-        // println(result.blocks.mkString("\n"))
-        // println("\n\nAssembly is:")
-        println(result.toAssembly.mkString("\n"))
+
+        for (function <- result) {
+          if (function.name == "main")
+            println("0x0100:")
+          println(function.toAssembly.mkString("\n"))
+        }
+
+        println(io.Source.fromFile("./examples/stdio.h").mkString)
+
       }
       case x => println("Parse error"); println(x)
     }

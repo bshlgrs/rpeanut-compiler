@@ -5,7 +5,7 @@ import interInstr._
 import assembly._
 import assemblyMaker._
 
-class Function(name: String, params: List[String], body: List[Statement]) {
+class Function(val name: String, params: List[String], body: List[Statement]) {
   override def toString() = ("def " + name + "(" + params.mkString(", ") +
               ") {\n" + body.mkString("\n") + "\n}")
 
@@ -48,6 +48,6 @@ class Function(name: String, params: List[String], body: List[Statement]) {
                                    localsMap,
                                    Some(returnPosition),
                                    localVars.length)
-                                      .assemble() }).flatten
+                                      .assemble() }).flatten :+ ASM_Halt
   }
 }

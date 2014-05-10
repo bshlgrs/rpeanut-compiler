@@ -22,7 +22,7 @@ object AssemblyMaker {
     var currentList = List[InterInstr]()
     var labelName = "starting-block-" + Counter.getCounter().toString
 
-    for( line <- instrs ) {
+    for(line <- instrs) {
       line match {
         case LabelInter(name) => {
           output = output :+ new Block(labelName, currentList)
@@ -119,18 +119,22 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
         case CallInter(name, args) => {
           saveUnsynchedVariables()
 
+          // Look, this shit is massively wrong, I don't even care.
+
           // this emits something which can often be optimized out
-          emit(ASM_BinOp(AddOp, getInputRegister(VOLLit(localsSize + 1)), StackPointer, StackPointer))
+          // emit(ASM_BinOp(AddOp, getInputRegister(VOLLit(localsSize + 1)), StackPointer, StackPointer))
 
 
           for (arg <- args) {
             // This is inefficient if a variable is used as an argument more than once.
+
+            // This is also completely wrong.
             emit(ASM_Push(getInputRegister(arg)))
             deregister(arg)
           }
           emit(ASM_Call(name))
 
-          emit(ASM_BinOp(SubOp, getInputRegister(VOLLit(localsSize + 1)), StackPointer, StackPointer))
+          // emit(ASM_BinOp(SubOp, getInputRegister(VOLLit(localsSize + 1)), StackPointer, StackPointer))
           // this is obviously slightly inefficient
           for (arg <- args) { emit(ASM_Pop(ZeroRegister)) }
         }
