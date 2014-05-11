@@ -14,15 +14,7 @@ abstract class BoolExpr {
   }
 
   def toIntermediate(thenLabel: String, elseLabel: String): List[InterInstr] = throw new Exception("unimplemented")
-  /*
-  toIntermediate is given a label number, and assumes the block will set up the
-  following labels for it:
 
-  then-labelNumber
-  else-labelNumber
-  end-labelNumber
-
-  */
 }
 
 case class BoolBinOp(op: BoolBinOperator, lhs: Expr, rhs: Expr) extends BoolExpr {

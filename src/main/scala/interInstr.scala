@@ -14,7 +14,7 @@ abstract class InterInstr {
     case JumpZInter(label, sourceVar) => "\tjump "+label+" if 0 == "+sourceVar
     case JumpNZInter(label, sourceVar) => "\tjump "+label+" if 0 != "+sourceVar
     case JumpNInter(label, sourceVar) => "\tjump "+label +" if 0 > "+sourceVar
-    case CallInter(name, args) => "\t"+name + "("+ args.mkString(", ") + ")"
+    case CallInter(name, args, target) => "\t"+target + "= "+name + "("+ args.mkString(", ") + ")"
     case PushInter => "\tpush;"
     case PopInter(target) => "\tpop "+target+";"
     case CommentInter(comment) => "; " + comment
@@ -63,7 +63,7 @@ abstract class InterInstr {
     case JumpZInter(_,a) => List(a)
     case JumpNInter(_,a) => List(a)
     case JumpNZInter(_,a) => List(a)
-    case CallInter(_, args) => args
+    case CallInter(_, args, _) => args
     case PopInter(_) => List()
     case PushInter => List()
     case CommentInter(_) => List()
@@ -77,6 +77,7 @@ abstract class InterInstr {
     case LoadInter(_,o) => List(o)
     case CopyInter(_,o) => List(o)
     case PopInter(o) => List(o)
+    case CallInter(_,_,Some(x)) => List(x)
     case _ => List()
   }
 
@@ -92,7 +93,7 @@ case class JumpInter(label: String) extends InterInstr
 case class JumpZInter(label: String, sourceVar: VarOrLit) extends InterInstr
 case class JumpNInter(label: String, sourceVar: VarOrLit) extends InterInstr
 case class JumpNZInter(label: String, sourceVar: VarOrLit) extends InterInstr
-case class CallInter(name: String, args: List[VarOrLit]) extends InterInstr
+case class CallInter(name: String, args: List[VarOrLit], target:Option[String]) extends InterInstr
 case object PushInter extends InterInstr
 case class PopInter(target: String) extends InterInstr
 case class CommentInter(comment: String) extends InterInstr

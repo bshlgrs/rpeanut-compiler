@@ -29,11 +29,6 @@ object AssemblyMaker {
           labelName = name
           currentList = List()
         }
-        case CallInter(_,_) => {
-          output = output :+ new Block(labelName, currentList :+ line)
-          labelName = labelName + "_"
-          currentList = List()
-        }
         case _ => {
           currentList = currentList :+ line
         }
@@ -51,6 +46,10 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
   var synched = collection.mutable.Map[String, Boolean]()
   var code = List[Assembly]()
   var position = 0 : Int
+
+  // This tells us the difference between the SP when the function was called
+  // and its current value
+  var stackOffset = 0
 
   def assemble(): List[Assembly] = {
     emit(ASM_Label(block.name))
@@ -116,27 +115,45 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
           var r1 = getInputRegister(variable)
           emit(ASM_JumpN(r1, label))
         }
-        case CallInter(name, args) => {
-          saveUnsynchedVariables()
-
-          // Look, this shit is massively wrong, I don't even care.
-
-          // this emits something which can often be optimized out
-          // emit(ASM_BinOp(AddOp, getInputRegister(VOLLit(localsSize + 1)), StackPointer, StackPointer))
+        case CallInter(name, args, returnValue) => {
 
 
+          // Add the size of locals to the stack pointer.
+          emit(ASM_BinOp(AddOp, getInputRegister(VOLLit(localsSize)), StackPointer, StackPointer))
+          stackOffset += localsSize
+
+          // Push a space on the stack for the return value.
+          emit(ASM_Push(ZeroRegister))
+          stackOffset += 1
+
+          // Push all the arguments on the stack.
           for (arg <- args) {
-            // This is inefficient if a variable is used as an argument more than once.
-
-            // This is also completely wrong.
             emit(ASM_Push(getInputRegister(arg)))
+            stackOffset += 1
             deregister(arg)
           }
+
+          saveUnsynchedVariables()
+
           emit(ASM_Call(name))
 
-          // emit(ASM_BinOp(SubOp, getInputRegister(VOLLit(localsSize + 1)), StackPointer, StackPointer))
-          // this is obviously slightly inefficient
-          for (arg <- args) { emit(ASM_Pop(ZeroRegister)) }
+          // Pop all the arguments from the stack.
+          emit(ASM_BinOp(SubOp, getInputRegister(VOLLit(args.length)), StackPointer, StackPointer))
+          stackOffset -= args.length
+
+          // Pop return value from the stack.
+          returnValue match {
+            case None => emit(ASM_Pop(ZeroRegister))
+            case Some(name) => {
+              var r1 = getOutputRegister(name)
+              emit(ASM_Pop(r1))
+            }
+          }
+          stackOffset -= 1
+
+          // Reduce the SP by the size of locals.
+          emit(ASM_BinOp(SubOp, getInputRegister(VOLLit(localsSize)), StackPointer, StackPointer))
+          stackOffset += localsSize
         }
         case PushInter => emit(ASM_Push(ZeroRegister))
         case PopInter(target) => {
@@ -167,7 +184,10 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
           emitStore(name, pos)
           synched(name) = true
         }
-        registers(pos) = None
+        // The next line is commented out because I think this works fine without it.
+        // And commenting it out should give me some efficiency gains.
+
+        // registers(pos) = None
       }
     }
     case VOLLit(num) => ()
@@ -176,6 +196,8 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
   def currentLine() : InterInstr = block.code(position)
 
   def isLocal(name: String): Boolean = locals contains name
+
+  def getPosition(name: String): Int = locals(name) - stackOffset
 
   def getInputRegister(vol: VarOrLit): Register = {
     if (registers contains Some(vol)) {
@@ -276,7 +298,7 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
 
   def emitStore(name: String, index: Int) {
     if (locals contains name) {
-      emit(ASM_BPDStore(GPRegister(index), locals(name), StackPointer))
+      emit(ASM_BPDStore(GPRegister(index), getPosition(name), StackPointer))
       synched(name) = true
     }
     else {
@@ -288,7 +310,7 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
   def emitLoad(vol: VarOrLit, index: Int) {
     vol match {
       case VOLVar(name) => {
-        emit(ASM_BPDLoad(StackPointer, locals(name), GPRegister(index)))
+        emit(ASM_BPDLoad(StackPointer, getPosition(name), GPRegister(index)))
       }
       case VOLLit(num) => {
         emit(ASM_LoadIm(num, GPRegister(index)))
