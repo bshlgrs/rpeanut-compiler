@@ -1,10 +1,10 @@
 def main() {
-  x = printInt(factorial2(6));
+  printInt(factorial(6));
 }
 
-def factorial2(x) {
+def factorial(x) {
   if (x==0) {
     return 1;
   }
-  return (x*factorial2((x-1)));
+  return (x * factorial((x-1)));
 }

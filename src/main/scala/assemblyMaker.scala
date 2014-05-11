@@ -116,8 +116,6 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
           emit(ASM_JumpN(r1, label))
         }
         case CallInter(name, args, returnValue) => {
-
-
           // Add the size of locals to the stack pointer.
           if (localsSize != 0)
             emit(ASM_BinOp(AddOp, getInputRegister(VOLLit(localsSize)), StackPointer, StackPointer))

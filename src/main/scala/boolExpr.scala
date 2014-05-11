@@ -11,6 +11,7 @@ abstract class BoolExpr {
     case BoolBinOp(op, e1, e2) => e1.toString + " " + op.toString + " " + e2.toString
     case AndExpr(lhs, rhs) => "("+ lhs.toString + " && " + rhs.toString + ")"
     case OrExpr(lhs, rhs) => "("+ lhs.toString + " || " + rhs.toString + ")"
+    case NotExpr(expr) => "!(" + expr.toString + ")"
   }
 
   def toIntermediate(thenLabel: String, elseLabel: String): List[InterInstr] = throw new Exception("unimplemented")
@@ -37,9 +38,27 @@ case class BoolBinOp(op: BoolBinOperator, lhs: Expr, rhs: Expr) extends BoolExpr
   }
 }
 
-case class AndExpr(lhs: BoolExpr, rhs: BoolExpr) extends BoolExpr
+case class AndExpr(lhs: BoolExpr, rhs: BoolExpr) extends BoolExpr {
+  override def toIntermediate(thenLabel: String, elseLabel: String): List[InterInstr] = {
+    val myLabel = "and-"+Counter.counter
+    val lhsCode = lhs.toIntermediate(myLabel, elseLabel)
+    val rhsCode = rhs.toIntermediate(thenLabel, elseLabel)
+    return (lhsCode ::: LabelInter(myLabel) +: rhsCode)
+  }
+}
 
-case class OrExpr(lhs: BoolExpr, rhs: BoolExpr) extends BoolExpr
+case class OrExpr(lhs: BoolExpr, rhs: BoolExpr) extends BoolExpr {
+  override def toIntermediate(thenLabel: String, elseLabel: String): List[InterInstr] = {
+    val myLabel = "and-"+Counter.counter
+    val lhsCode = lhs.toIntermediate(thenLabel, myLabel)
+    val rhsCode = rhs.toIntermediate(thenLabel, elseLabel)
+    return (lhsCode ::: LabelInter(myLabel) +: rhsCode)
+  }
+}
+
+case class NotExpr(expr: BoolExpr) extends BoolExpr {
+  override def toIntermediate(thenLabel: String, elseLabel: String) = expr.toIntermediate(elseLabel, thenLabel)
+}
 
 abstract class BoolBinOperator {
   override def toString: String = this match {

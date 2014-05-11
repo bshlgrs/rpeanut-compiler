@@ -8,9 +8,10 @@ import interInstr._
 import counter.Counter
 import statement._
 
-abstract class Statement {
+sealed abstract class Statement {
   override def toString: String = this match {
     case Assignment(name, rhs) => name + " = " + rhs.toString + ";"
+    case VoidFunctionCall(name, args) => name + "(" + args.mkString(", ") + ")"
     case IndirectAssignment(lhs, rhs) => "*" + lhs.toString + " = " + rhs.toString+";"
     case IfElse(condition, thenBlock, elseBlock) => ("if (" + condition.toString +
                 ") { \n"+thenBlock.mkString("\n") + "} \nelse {\n" +
@@ -100,6 +101,24 @@ case class Return(value: Option[Expr]) extends Statement {
       val (exprCode, returnPlace) = expr.toIntermediate
       (List(CommentInter(this.toString)) ::: exprCode ::: List(ReturnWithValInter(returnPlace)))
     }
+  }
+}
+
+case class VoidFunctionCall(name: String, args: List[Expr]) extends Statement {
+  override def toIntermediate(): List[InterInstr] = {
+      val arg_code = for( arg <- args ) yield arg.toIntermediate()
+      val code = List.concat(for ((code, varOrLit) <- arg_code) yield code).flatten
+      val vars = for ((code, varOrLit) <- arg_code) yield varOrLit
+      val callInstruction = CallInter(name, vars, None)
+
+      code :+ callInstruction
+  }
+}
+
+case class ForLoop(instr: Statement, cond: BoolExpr, iterator: Statement,
+                          block: List[Statement]) extends Statement {
+  override def toIntermediate() = {
+    instr.toIntermediate() ::: While(cond, block :+ iterator).toIntermediate()
   }
 }
 

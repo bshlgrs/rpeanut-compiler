@@ -3,7 +3,7 @@ package rPeANutWrapper
 import java.io._
 import scala.sys.process._
 
-object rPeANutWrapper {
+object RPeANutWrapper {
   def runAssembly(code: String):String = {
     val writer = new PrintWriter(new File("/tmp/test.s" ))
 

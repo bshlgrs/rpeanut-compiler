@@ -51,8 +51,6 @@ abstract class Expr {
       val out = Counter.getTempVarName()
       val callInstruction = CallInter(name, vars, Some(out))
 
-
-      // this is kinda shitty.
       (code :+ callInstruction, VOLVar(out))
     }
     case IfExpression(condition, thenExpr, elseExpr) => {
