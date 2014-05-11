@@ -32,9 +32,22 @@ It's not very fully featured, but it's coming along slowly!
 
 ## Things that do work
 
+The following code works fine:
+```
+def main() {
+  x = printInt(factorial2(6));
+}
+
+def factorial2(x) {
+  if (x==0) {
+    return 1;
+  }
+  return (x*factorial2((x-1)));
+}
+```
+
 ## Incomplete list of things that don't work
 - Ternary operator
-- Positions of variables on the stack are slightly inaccurate, I think
 - Global variables
 - String literals or array literals
 
