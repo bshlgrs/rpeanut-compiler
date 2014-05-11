@@ -119,7 +119,8 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
 
 
           // Add the size of locals to the stack pointer.
-          emit(ASM_BinOp(AddOp, getInputRegister(VOLLit(localsSize)), StackPointer, StackPointer))
+          if (localsSize != 0)
+            emit(ASM_BinOp(AddOp, getInputRegister(VOLLit(localsSize)), StackPointer, StackPointer))
           stackOffset += localsSize
 
           // Push a space on the stack for the return value.
@@ -137,8 +138,11 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
 
           emit(ASM_Call(name))
 
+          registers = Array.fill[Option[VarOrLit]](10)(None)
+
           // Pop all the arguments from the stack.
-          emit(ASM_BinOp(SubOp, getInputRegister(VOLLit(args.length)), StackPointer, StackPointer))
+          if (args.length != 0)
+            emit(ASM_BinOp(SubOp, StackPointer, getInputRegister(VOLLit(args.length)), StackPointer))
           stackOffset -= args.length
 
           // Pop return value from the stack.
@@ -152,7 +156,8 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
           stackOffset -= 1
 
           // Reduce the SP by the size of locals.
-          emit(ASM_BinOp(SubOp, getInputRegister(VOLLit(localsSize)), StackPointer, StackPointer))
+          if (localsSize != 0)
+            emit(ASM_BinOp(SubOp, StackPointer, getInputRegister(VOLLit(localsSize)), StackPointer))
           stackOffset += localsSize
         }
         case PushInter => emit(ASM_Push(ZeroRegister))

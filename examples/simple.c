@@ -1,12 +1,11 @@
 def main() {
-  x = printInt(factorial(5));
+  x = printInt(factorial2(6));
 }
 
-def factorial(x) {
-  out = 1;
-  while(x > 0) {
-    out = (out * x);
-    x = (x-1);
+
+def factorial2(x) {
+  if (x==0) {
+    return 1;
   }
-  return out;
+  return (x*factorial2((x-1)));
 }
