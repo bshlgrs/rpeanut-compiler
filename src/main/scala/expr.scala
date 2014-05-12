@@ -16,11 +16,29 @@ abstract class Expr {
     case FunctionCall(name, args) => name + "(" + args.mkString(", ") + ")"
     case IfExpression(condition, thenExpr, elseExpr) => ("(" + condition.toString
           + ") ? (" + thenExpr.toString + ") : (" + elseExpr.toString + ")")
+    case StringLiteral(value) => "\"" + value + "\""
+  }
+
+  def allExpressions: List[Expr] = this match {
+    case BinOp(_, l, r) => (this +: l.allExpressions) ::: r.allExpressions
+    case Load(e) => this +: e.allExpressions
+    case FunctionCall(_, args) => args.map{_.allExpressions}.flatten :+ this
+    case IfExpression(condition, thenExpr, elseExpr) => ( (this +:
+                    condition.allExpressions) ::: thenExpr.allExpressions :::
+                    elseExpr.allExpressions)
+    case _ => List(this)
+  }
+
+  def strings: List[String] = {
+    for (StringLiteral(x) <- allExpressions) yield (
+      x
+    )
   }
 
   val isPrimitive: Boolean = this match {
     case Lit(_) => true
     case Var(_) => true
+    case StringLiteral(_) => true
     case _ => false
   }
 
@@ -58,6 +76,7 @@ abstract class Expr {
       (IfElse(condition, List(Assignment(newVal, thenExpr)),
                         List(Assignment(newVal, elseExpr))).toIntermediate, VOLVar(newVal))
     }
+    case StringLiteral(value) => (Nil, VOLVar("string-"+value.hashCode()))
   }
 }
 
@@ -67,3 +86,4 @@ case class Var(name: String) extends Expr
 case class Load(exp: Expr) extends Expr
 case class FunctionCall(name: String, args: List[Expr]) extends Expr
 case class IfExpression(condition: BoolExpr, thenExpr: Expr, elseExpr: Expr) extends Expr
+case class StringLiteral(value: String) extends Expr

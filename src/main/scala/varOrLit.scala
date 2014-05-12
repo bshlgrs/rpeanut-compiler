@@ -1,6 +1,6 @@
 package varOrLit
 
-abstract class VarOrLit {
+sealed abstract class VarOrLit {
   override def toString: String = this match {
     case VOLVar(n) => n
     case VOLLit(n) => n.toString

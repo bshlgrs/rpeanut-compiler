@@ -51,6 +51,14 @@ def factorial2(x) {
 - Global variables
 - String literals or array literals
 
+## Things which should be in the standard library
+- printString
+- printInt
+- printChar
+- readChar
+- readInt
+- readLine
+- drawDot
 
 ## Notes
 - I don't promise to calculate expressions in the order they were inputted.

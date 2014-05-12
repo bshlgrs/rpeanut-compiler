@@ -5,6 +5,7 @@ import counter._
 import assembly._
 import varOrLit._
 import binOperator._
+import expr._
 
 class Block(val name: String, val code: List[InterInstr]) {
   override def toString(): String = {
@@ -40,6 +41,7 @@ object AssemblyMaker {
 }
 
 class BlockAssembler(block: Block, locals: Map[String, Int],
+                                  val globals: List[String],
                                   val returnPosition: Option[Int],
                                         val localsSize: Int) {
   var registers = Array.fill[Option[VarOrLit]](10)(None)
@@ -183,7 +185,7 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
     case VOLVar(name) => {
       if (registers contains Some(name)) {
         val pos = registers indexOf Some(name)
-        if (isLocal(name) && !synched(name)) {
+        if (isPermanent(name) && !synched(name)) {
           emitStore(name, pos)
           synched(name) = true
         }
@@ -198,7 +200,7 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
 
   def currentLine() : InterInstr = block.code(position)
 
-  def isLocal(name: String): Boolean = locals contains name
+  def isPermanent(name: String): Boolean = (locals contains name) || (globals contains name)
 
   def getPosition(name: String): Int = locals(name) - stackOffset
 
@@ -209,7 +211,7 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
     else {
       vol match {
         case VOLVar(name) => {
-          if (isLocal(name)) {
+          if (isPermanent(name)) {
             var register = getRegister()
             emitLoad(vol, register)
             registers(register) = Some(vol)
@@ -221,7 +223,8 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
                                 "The variable is "+name +", and the current allocation is:\n"+
                                 registers.mkString(",")+"\n\n"+
                                 "Here's the block that I was compiling: \n"+block.toString +
-                                "\n\nI was up to line "+position+"\nLocals are "+locals.toString)
+                                "\n\nI was up to line "+position+"\nLocals are "+locals.toString+
+                                "\nGlobals are "+globals.mkString(", "))
           }
         }
         case VOLLit(num) => {
@@ -277,7 +280,7 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
     for ((option_vol, index) <- registers.view.zipWithIndex) {
       option_vol match {
         case Some(VOLVar(name)) => {
-          if (isLocal(name)) {
+          if (isPermanent(name)) {
             if (! synched(name)) {
               emitStore(name, index)
             }
@@ -304,6 +307,9 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
       emit(ASM_BPDStore(GPRegister(index), getPosition(name), StackPointer))
       synched(name) = true
     }
+    else if (globals contains name) {
+      emit(ASM_StoreGlobal(name, GPRegister(index)))
+    }
     else {
       throw new Exception("Tried to emit store for "+name+", but it's not a local.\n"+
                         "Locals are "+locals)
@@ -313,7 +319,16 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
   def emitLoad(vol: VarOrLit, index: Int) {
     vol match {
       case VOLVar(name) => {
-        emit(ASM_BPDLoad(StackPointer, getPosition(name), GPRegister(index)))
+        if (locals contains name) {
+          emit(ASM_BPDLoad(StackPointer, getPosition(name), GPRegister(index)))
+        }
+        else if (globals contains name) {
+          emit(ASM_LoadGlobal(name, GPRegister(index)))
+        }
+        else {
+          throw new Exception("Tried to emit load for "+name+", but it's not a local.\n"+
+                            "Locals are "+locals)
+        }
       }
       case VOLLit(num) => {
         emit(ASM_LoadIm(num, GPRegister(index)))
@@ -341,7 +356,7 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
   def saveUnsynchedVariables() = {
     for ((optionVol, index) <- registers.view.zipWithIndex) optionVol match {
       case Some(VOLVar(name)) => {
-        if (isLocal(name) && !synched(name)) {
+        if (isPermanent(name) && !synched(name)) {
           emitStore(name, index)
           synched(name) = true
         }

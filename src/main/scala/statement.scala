@@ -25,6 +25,24 @@ sealed abstract class Statement {
     }
   }
   def toIntermediate(): List[InterInstr]
+
+  def allExpressions: List[Expr] =  this match {
+    case Assignment(_,rhs) => List(rhs)
+    case VoidFunctionCall(_,args) => args
+    case IndirectAssignment(lhs,rhs) => List(lhs, rhs)
+    case IfElse(condition, thenBlock, elseBlock) => (condition.allExpressions
+                            ::: thenBlock.map{_.allExpressions}.flatten
+                            ::: elseBlock.map{_.allExpressions}.flatten)
+    case While(condition, block) => (condition.allExpressions :::
+                                     block.map{_.allExpressions}.flatten)
+    case ForLoop(a,b,c,d) => (
+      a.allExpressions ::: b.allExpressions ::: c.allExpressions :::
+                  d.map{_.allExpressions}.flatten)
+    case Return(Some(x)) => List(x)
+    case Return(None) => List()
+  }
+
+
 }
 
 case class Assignment(name: String, rhs: Expr) extends Statement {

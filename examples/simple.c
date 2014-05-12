@@ -1,5 +1,6 @@
 def main() {
   printInt(factorial(5));
+  printInt("whatever");
 }
 
 def factorial(x) {

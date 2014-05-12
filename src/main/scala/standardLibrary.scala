@@ -3,7 +3,8 @@ package standardLibrary
 object StandardLibrary {
 
   val standardLibrary = Map(
-    "printInt" -> """
+
+"printInt" -> """
 printInt:
   load #0 R3
   load #10 R1
@@ -21,10 +22,37 @@ printIntLoop2:
   store R1 0xFFF0
   sub R3 ONE R3
   jumpnz R3 printIntLoop2
+  return
+  """,
+
+"putsInt" -> """
+putsInt:
+  load #0 R3
+  load #10 R1
+  load SP #-1 R0
+putsIntLoop:
+  mod R0 R1 R2
+  div R0 R1 R0
+  push R2
+  add ONE R3 R3
+  jumpnz R0 putsIntLoop
+  load #'0' R0
+putsIntLoop2:
+  pop R1
+  add R0 R1 R1
+  store R1 0xFFF0
+  sub R3 ONE R3
+  jumpnz R3 putsIntLoop2
   load #' ' R0
   store R0 0xFFF0
   return
   """,
+
+"printChar" -> """
+  load SP #-1 R0
+  store R0 9xFFF0
+  return
+""",
 
 "getChar" -> """
 ; this can probably be done more efficiently
@@ -44,7 +72,21 @@ getCharHandler:
   store R0 #-1 SP
   store ZERO 0xFFF2
   return
+  """,
+
+"puts" -> """
+printString :
+  load SP #-1 R0; load location of string
+  load R0 R1
+printStringLoop:
+  store R1 0xFFF0
+  add R0 ONE R0
+  load R0 R1
+  jumpnz R1 printStringLoop
+  load #'\n' R1
+  store R1 0xFFF0
+  return
   """
 
-      )
+  )
 }

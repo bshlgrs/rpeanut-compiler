@@ -17,7 +17,7 @@ case object OneRegister extends Register
 case object MOneRegister extends Register
 case object ZeroRegister extends Register
 
-abstract class Assembly {
+sealed abstract class Assembly {
   val comment = "" : String;
 
   override def toString = this match {
@@ -32,7 +32,9 @@ abstract class Assembly {
     case ASM_Load(location, out) => "load "+ location+" " +out
     case ASM_LoadIm(num, out) => "load #"+num+" "+out
     case ASM_Store(in, location) => "store "+in+" "+ location
+    case ASM_StoreGlobal(position, destination) => "store "+position + " "+destination
     case ASM_BPDStore(value, displacement, position) => "store "+value+" #"+displacement +" "+position
+    case ASM_LoadGlobal(position, destination) => "load "+position + " "+destination
     case ASM_Jump(label) => "jump " + label
     case ASM_JumpZ(in, label) => "jumpz " + in+ " "+ label
     case ASM_JumpNZ(in, label) => "jumpnz " + in + " "+ label
@@ -55,7 +57,9 @@ case class ASM_BPDLoad(source: Register, displacement: Int, target: Register)
 case class ASM_Load(location: Register, out: Register) extends Assembly
 case class ASM_LoadIm(num: Int, out: Register) extends Assembly
 case class ASM_Store(in: Register, location: Register) extends Assembly
+case class ASM_StoreGlobal(position: String, destination: Register) extends Assembly
 case class ASM_BPDStore(value: Register, displacement: Int, position: Register) extends Assembly
+case class ASM_LoadGlobal(position: String, target: Register) extends Assembly
 case class ASM_Jump(label: String) extends Assembly
 case class ASM_JumpZ(in: Register, label: String) extends Assembly
 case class ASM_JumpNZ(in: Register, label: String) extends Assembly

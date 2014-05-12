@@ -1,4 +1,5 @@
 import scala.util.parsing.combinator._
+import scala.collection.mutable.ListBuffer
 import statement._
 import expr._
 import binOperator._
@@ -43,12 +44,15 @@ class CParser extends JavaTokenParsers {
            | "true" ^^ (x => Lit(1))
            | "false" ^^ (x => Lit(0))
            | """'\S'""".r ^^ (x => Lit(x.charAt(1).toInt) )
+           | stringLiteral ^^ { StringLiteral(_)}
            )
 
   def boolExpr: Parser[BoolExpr] = (
       "("~expr~"=="~expr~")" ^^ {case _~e1~_~e2~_ => BoolBinOp(Equals,e1,e2)}
     | "("~expr~">"~expr~")" ^^ {case _~e1~_~e2~_ => BoolBinOp(GreaterThan,e1,e2)}
-    | "("~expr~"<"~expr~")" ^^ {case _~e1~_~e2~_ => BoolBinOp(GreaterThan,e2,e1)}
+    | "("~expr~"<"~expr~")" ^^ {case _~e1~_~e2~_ => BoolBinOp(GreaterOrEqual,e2,e1)}
+    | "("~expr~">="~expr~")" ^^ {case _~e1~_~e2~_ => BoolBinOp(GreaterOrEqual,e1,e2)}
+    | "("~expr~"<="~expr~")" ^^ {case _~e1~_~e2~_ => BoolBinOp(GreaterThan,e2,e1)}
     | "("~expr~"!="~expr~")" ^^ {case _~e1~_~e2~_ => NotExpr(BoolBinOp(Equals,e2,e1))}
     | "("~boolExpr~"&&"~boolExpr~")" ^^ {case _~l~_~r~_ => AndExpr(l,r)}
     | "("~boolExpr~"||"~boolExpr~")" ^^ {case _~l~_~r~_ => OrExpr(l,r)}
@@ -106,16 +110,28 @@ object RPeANutWrapper {
 
 object Compile extends CParser {
   val output = new StringBuilder()
-
+  val stringSection = new StringBuilder()
+  val globals: ListBuffer[String] = new ListBuffer()
   def main(args: Array[String]) {
+    output.append("; Compiled by Buck's rPeANUt compiler!!!\n")
     output.append("0x0001:\n\tjump 0x0100\n\n")
     parseAll(program, io.Source.fromFile(args(0)).mkString) match {
       case Success(result, _) => {
         for (function <- result) {
+
+          for (x <- function.strings) {
+            val hash = "string-"+x.hashCode()
+            globals.append(hash)
+            stringSection.append("block "+hash+": \""+x+"\"\n")
+          }
+
+
           if (function.name == "main")
             output.append("0x0100:\n")
-          output.append(function.toAssembly.mkString("\n")+"\n")
+          output.append(function.toAssembly(globals.toList).mkString("\n")+"\n")
         }
+
+
 
         // output.append(io.Source.fromFile("./examples/stdio.h").mkString)
 
@@ -130,10 +146,7 @@ object Compile extends CParser {
       }
       case x => println("Parse error"); println(x)
     }
-    println(output.toString)
-  }
 
-  def emit(x: String) {
-
+    println(output.toString + stringSection.toString)
   }
 }

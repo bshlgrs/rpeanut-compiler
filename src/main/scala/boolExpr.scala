@@ -16,10 +16,23 @@ sealed abstract class BoolExpr {
 
   def toIntermediate(thenLabel: String, elseLabel: String): List[InterInstr] = throw new Exception("unimplemented")
 
+  def allExpressions: List[Expr] = this match {
+    case BoolBinOp(_, e1, e2) => List(e1, e2)
+    case AndExpr(e1, e2) => e1.allExpressions ::: e2.allExpressions
+    case OrExpr(e1, e2) => e1.allExpressions ::: e2.allExpressions
+    case NotExpr(e) => e.allExpressions
+  }
 }
 
 case class BoolBinOp(op: BoolBinOperator, lhs: Expr, rhs: Expr) extends BoolExpr {
   override def toIntermediate(thenLabel: String, elseLabel: String): List[InterInstr] = {
+    op match {
+      case GreaterOrEqual => return (
+        BoolBinOp(GreaterThan, BinOp(AddOp, Lit(1), lhs), rhs)
+                              .toIntermediate(thenLabel, elseLabel)
+      )
+      case _ => ()
+    }
     val (lhsCode, lhsResult) = lhs.toIntermediate()
     val (rhsCode, rhsResult) = rhs.toIntermediate()
     val outputVar = Counter.getTempVarName()
@@ -32,6 +45,7 @@ case class BoolBinOp(op: BoolBinOperator, lhs: Expr, rhs: Expr) extends BoolExpr
       case GreaterThan => List(BinOpInter(SubOp, rhsResult, lhsResult, outputVar),
                                JumpNInter(thenLabel, VOLVar(outputVar)),
                                JumpInter(elseLabel))
+      case GreaterOrEqual => throw new Exception("something is hideously wrong")
     }
 
     (lhsCode ::: rhsCode ::: comparisonInstrs)
