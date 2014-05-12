@@ -1,3 +1,9 @@
+package standardLibrary
+
+object StandardLibrary {
+
+  val standardLibrary = Map(
+    "printInt" -> """
 printInt:
   load #0 R3
   load #10 R1
@@ -18,7 +24,9 @@ printIntLoop2:
   load #' ' R0
   store R0 0xFFF0
   return
+  """,
 
+"getChar" -> """
 ; this can probably be done more efficiently
 getChar:
   store ONE 0xFFF2
@@ -36,3 +44,7 @@ getCharHandler:
   store R0 #-1 SP
   store ZERO 0xFFF2
   return
+  """
+
+      )
+}

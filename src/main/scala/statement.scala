@@ -18,6 +18,7 @@ sealed abstract class Statement {
                         elseBlock.mkString("\n") + "\n}")
     case While(condition, block) => ("while (" + condition.toString + ") {\n" +
                         block.mkString("\n") + "\n}")
+    case ForLoop(a,b,c,d) => "for ("+a+"; "+b+"; "+c+") {\n"+d.mkString("\n")+"}"
     case Return(thing) => thing match {
       case Some(expr) => "return " + expr.toString + ";"
       case None => "return;"

@@ -6,7 +6,7 @@ import expr._
 import interInstr._
 import varOrLit._
 
-abstract class BoolExpr {
+sealed abstract class BoolExpr {
   override def toString: String = this match {
     case BoolBinOp(op, e1, e2) => e1.toString + " " + op.toString + " " + e2.toString
     case AndExpr(lhs, rhs) => "("+ lhs.toString + " && " + rhs.toString + ")"
@@ -60,12 +60,14 @@ case class NotExpr(expr: BoolExpr) extends BoolExpr {
   override def toIntermediate(thenLabel: String, elseLabel: String) = expr.toIntermediate(elseLabel, thenLabel)
 }
 
-abstract class BoolBinOperator {
+sealed abstract class BoolBinOperator {
   override def toString: String = this match {
     case Equals => "=="
     case GreaterThan => ">"
+    case GreaterOrEqual => ">="
   }
 }
 
 case object Equals extends BoolBinOperator
 case object GreaterThan extends BoolBinOperator
+case object GreaterOrEqual extends BoolBinOperator

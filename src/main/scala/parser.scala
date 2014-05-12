@@ -6,6 +6,7 @@ import boolExpr._
 import function._
 import java.io._
 import scala.sys.process._
+import standardLibrary._
 
 class JSON extends JavaTokenParsers {
 
@@ -41,6 +42,7 @@ class CParser extends JavaTokenParsers {
            | wholeNumber ^^ (x => Lit(x.toInt))
            | "true" ^^ (x => Lit(1))
            | "false" ^^ (x => Lit(0))
+           | """'\S'""".r ^^ (x => Lit(x.charAt(1).toInt) )
            )
 
   def boolExpr: Parser[BoolExpr] = (
@@ -48,6 +50,9 @@ class CParser extends JavaTokenParsers {
     | "("~expr~">"~expr~")" ^^ {case _~e1~_~e2~_ => BoolBinOp(GreaterThan,e1,e2)}
     | "("~expr~"<"~expr~")" ^^ {case _~e1~_~e2~_ => BoolBinOp(GreaterThan,e2,e1)}
     | "("~expr~"!="~expr~")" ^^ {case _~e1~_~e2~_ => NotExpr(BoolBinOp(Equals,e2,e1))}
+    | "("~boolExpr~"&&"~boolExpr~")" ^^ {case _~l~_~r~_ => AndExpr(l,r)}
+    | "("~boolExpr~"||"~boolExpr~")" ^^ {case _~l~_~r~_ => OrExpr(l,r)}
+    | "!"~boolExpr ^^ {case _~x => NotExpr(x)}
     )
 
   def op: Parser[BinOperator] = ("+" ^^ (x => AddOp)
@@ -103,6 +108,7 @@ object Compile extends CParser {
   val output = new StringBuilder()
 
   def main(args: Array[String]) {
+    output.append("0x0001:\n\tjump 0x0100\n\n")
     parseAll(program, io.Source.fromFile(args(0)).mkString) match {
       case Success(result, _) => {
         for (function <- result) {
@@ -111,13 +117,20 @@ object Compile extends CParser {
           output.append(function.toAssembly.mkString("\n")+"\n")
         }
 
-        output.append(io.Source.fromFile("./examples/stdio.h").mkString)
+        // output.append(io.Source.fromFile("./examples/stdio.h").mkString)
 
-        println(RPeANutWrapper.runAssembly(output.toString()))
+        for ((function, implementation) <- StandardLibrary.standardLibrary) {
+          if (output.toString.contains(function))
+            output.append(implementation)
+        }
+
+
+        // println(RPeANutWrapper.runAssembly(output.toString()))
 
       }
       case x => println("Parse error"); println(x)
     }
+    println(output.toString)
   }
 
   def emit(x: String) {

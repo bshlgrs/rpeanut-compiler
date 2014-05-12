@@ -18,3 +18,17 @@ iodevhandler:
 	pop R0
 	reset IM
 	return
+
+getChar:
+  store ONE 0xFFF2
+  load 0x0001 R0
+  load #getCharHandler R1
+  or R0 R1 R1
+  store R1 0x0001
+loop:
+  jump loop
+getCharHandler:
+  load 0xFFF0 R0
+  store R0 #-1 SP
+  store ZERO 0xFFF2
+  return

@@ -49,6 +49,13 @@ abstract class InterInstr {
         this
       }
 
+    case CallInter(x,y,Some(n)) => {
+      if (n == oldTarget)
+        CallInter(x,y,Some(newTarget))
+      else
+        this
+    }
+
     case _ => this
   }
 
