@@ -50,9 +50,9 @@ class CParser extends JavaTokenParsers {
   def boolExpr: Parser[BoolExpr] = (
       "("~expr~"=="~expr~")" ^^ {case _~e1~_~e2~_ => BoolBinOp(Equals,e1,e2)}
     | "("~expr~">"~expr~")" ^^ {case _~e1~_~e2~_ => BoolBinOp(GreaterThan,e1,e2)}
-    | "("~expr~"<"~expr~")" ^^ {case _~e1~_~e2~_ => BoolBinOp(GreaterOrEqual,e2,e1)}
+    | "("~expr~"<"~expr~")" ^^ {case _~e1~_~e2~_ => BoolBinOp(GreaterThan,e2,e1)}
     | "("~expr~">="~expr~")" ^^ {case _~e1~_~e2~_ => BoolBinOp(GreaterOrEqual,e1,e2)}
-    | "("~expr~"<="~expr~")" ^^ {case _~e1~_~e2~_ => BoolBinOp(GreaterThan,e2,e1)}
+    | "("~expr~"<="~expr~")" ^^ {case _~e1~_~e2~_ => BoolBinOp(GreaterOrEqual,e2,e1)}
     | "("~expr~"!="~expr~")" ^^ {case _~e1~_~e2~_ => NotExpr(BoolBinOp(Equals,e2,e1))}
     | "("~boolExpr~"&&"~boolExpr~")" ^^ {case _~l~_~r~_ => AndExpr(l,r)}
     | "("~boolExpr~"||"~boolExpr~")" ^^ {case _~l~_~r~_ => OrExpr(l,r)}
@@ -110,43 +110,53 @@ object RPeANutWrapper {
 
 object Compile extends CParser {
   val output = new StringBuilder()
-  val stringSection = new StringBuilder()
+  val stringSection: ListBuffer[String] = new ListBuffer()
   val globals: ListBuffer[String] = new ListBuffer()
   def main(args: Array[String]) {
+    args(0) match {
+      case "readAndRun" => {
+        val inputString = io.Source.stdin.getLines.mkString("\n")
+        compile(inputString)
+        println(RPeANutWrapper.runAssembly(output.toString()))
+      }
+      case "compile" => {
+        compile(io.Source.fromFile(args(1)).mkString)
+        println(output.toString + stringSection.mkString("\n\n"))
+        return;
+      }
+    }
+  }
+
+  def compile(inputString: String) {
     output.append("; Compiled by Buck's rPeANUt compiler!!!\n")
     output.append("0x0001:\n\tjump 0x0100\n\n")
-    parseAll(program, io.Source.fromFile(args(0)).mkString) match {
+    parseAll(program, inputString) match {
       case Success(result, _) => {
         for (function <- result) {
-
           for (x <- function.strings) {
             val hash = "string-"+x.hashCode()
             globals.append(hash)
-            stringSection.append("block "+hash+": \""+x+"\"\n")
+            stringSection.append(hash+": block #"+x)
           }
 
 
           if (function.name == "main")
             output.append("0x0100:\n")
           output.append(function.toAssembly(globals.toList).mkString("\n")+"\n")
+
+          println(function.toIntermediate().mkString("\n"))
         }
 
-
-
-        // output.append(io.Source.fromFile("./examples/stdio.h").mkString)
+        output.append(stringSection.distinct.mkString("\n\n"))
 
         for ((function, implementation) <- StandardLibrary.standardLibrary) {
           if (output.toString.contains(function))
             output.append(implementation)
         }
-
-
         // println(RPeANutWrapper.runAssembly(output.toString()))
 
       }
       case x => println("Parse error"); println(x)
     }
-
-    println(output.toString + stringSection.toString)
   }
 }

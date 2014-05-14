@@ -44,7 +44,10 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
                                   val globals: List[String],
                                   val returnPosition: Option[Int],
                                         val localsSize: Int) {
-  var registers = Array.fill[Option[VarOrLit]](10)(None)
+  def initialRegisterCondition() = {
+    Array.fill[Option[VarOrLit]](8)(None)
+  }
+  var registers = Array.fill[Option[VarOrLit]](8)(None)
   var synched = collection.mutable.Map[String, Boolean]()
   var code = List[Assembly]()
   var position = 0 : Int
@@ -55,8 +58,19 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
 
   def assemble(): List[Assembly] = {
     emit(ASM_Label(block.name))
+    emit(ASM_Comment("Locals are ["+locals.keys.mkString(", ")+"]"))
+
+    println("locals are: "+locals)
 
     for((inter, index : Int) <- block.code.view.zipWithIndex) {
+      // inter match {
+      //   case CommentInter(_) => ()
+      //   case LabelInter(_) => ()
+      //   case _ => emit(ASM_Comment("### "+inter.toString()))
+      // }
+
+      // emit(ASM_Comment("   # registers are "+registers.mkString(",")))
+
       position = index // Can I do this more elegantly? More state is generally bad...
 
       inter match {
@@ -117,11 +131,39 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
           var r1 = getInputRegister(variable)
           emit(ASM_JumpN(r1, label))
         }
+        case AmpersandInter(name, target) => {
+          if (locals contains name) {
+            var r1 = getInputRegister(VOLLit(locals(name)))
+            var out = getOutputRegister(target)
+
+            emit(ASM_BinOp(AddOp, r1, StackPointer, out))
+            emit(ASM_Load(out, out))
+          } else {
+            var out = getOutputRegister(target)
+            emit(ASM_LoadGlobal("#"+name, out))
+          }
+        }
         case CallInter(name, args, returnValue) => {
           // Add the size of locals to the stack pointer.
           if (localsSize != 0)
             emit(ASM_BinOp(AddOp, getInputRegister(VOLLit(localsSize)), StackPointer, StackPointer))
           stackOffset += localsSize
+
+          // Save temporary variables.
+          var savedTempVariables = List[String]()
+
+          for ((register, index) <- registers.view.zipWithIndex ) {
+            register match {
+              case Some(VOLVar(name)) => {
+                if (!isUnneeded(VOLVar(name)) && !isPermanent(name)) {
+                  emit(ASM_Push(GPRegister(index)))
+                  stackOffset += 1
+                  savedTempVariables = name +: savedTempVariables
+                }
+              }
+              case _ => ()
+            }
+          }
 
           // Push a space on the stack for the return value.
           emit(ASM_Push(ZeroRegister))
@@ -138,7 +180,7 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
 
           emit(ASM_Call(name))
 
-          registers = Array.fill[Option[VarOrLit]](10)(None)
+          registers = Array.fill[Option[VarOrLit]](8)(None)
 
           // Pop all the arguments from the stack.
           if (args.length != 0)
@@ -155,10 +197,17 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
           }
           stackOffset -= 1
 
+          // Restore temporary registers
+          for (temp <- savedTempVariables) {
+            val r = getOutputRegister(temp)
+            emit(ASM_Pop(r))
+            stackOffset -= 1
+          }
+
           // Reduce the SP by the size of locals.
           if (localsSize != 0)
             emit(ASM_BinOp(SubOp, StackPointer, getInputRegister(VOLLit(localsSize)), StackPointer))
-          stackOffset += localsSize
+          stackOffset -= localsSize
         }
         case PushInter => emit(ASM_Push(ZeroRegister))
         case PopInter(target) => {

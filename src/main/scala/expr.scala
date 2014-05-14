@@ -7,7 +7,7 @@ import counter.Counter
 import boolExpr._
 import statement._
 
-abstract class Expr {
+sealed abstract class Expr {
   override def toString: String = this match {
     case Lit(n) => n.toString
     case Var(n) => n
@@ -16,7 +16,8 @@ abstract class Expr {
     case FunctionCall(name, args) => name + "(" + args.mkString(", ") + ")"
     case IfExpression(condition, thenExpr, elseExpr) => ("(" + condition.toString
           + ") ? (" + thenExpr.toString + ") : (" + elseExpr.toString + ")")
-    case StringLiteral(value) => "\"" + value + "\""
+    case StringLiteral(value) => value
+    case PointerToName(name) => "&" + name
   }
 
   def allExpressions: List[Expr] = this match {
@@ -39,6 +40,7 @@ abstract class Expr {
     case Lit(_) => true
     case Var(_) => true
     case StringLiteral(_) => true
+    case PointerToName(_) => true
     case _ => false
   }
 
@@ -76,7 +78,17 @@ abstract class Expr {
       (IfElse(condition, List(Assignment(newVal, thenExpr)),
                         List(Assignment(newVal, elseExpr))).toIntermediate, VOLVar(newVal))
     }
-    case StringLiteral(value) => (Nil, VOLVar("string-"+value.hashCode()))
+    case StringLiteral(value) => {
+      val out = Counter.getTempVarName()
+      val name = "string-"+value.hashCode()
+
+      (List(AmpersandInter(name, out)), VOLVar(out))
+    }
+
+    case PointerToName(name) => {
+      val out = Counter.getTempVarName()
+      (List(AmpersandInter(name, out)), VOLVar(out))
+    }
   }
 }
 
@@ -87,3 +99,4 @@ case class Load(exp: Expr) extends Expr
 case class FunctionCall(name: String, args: List[Expr]) extends Expr
 case class IfExpression(condition: BoolExpr, thenExpr: Expr, elseExpr: Expr) extends Expr
 case class StringLiteral(value: String) extends Expr
+case class PointerToName(name: String) extends Expr

@@ -3,9 +3,9 @@ package interInstr
 import varOrLit._
 import binOperator._
 
-abstract class InterInstr {
+sealed abstract class InterInstr {
   override def toString: String = this match {
-    case BinOpInter(op, in1, in2, target) => "\t$target\t=  "+in1.toString + "  "+op.toString + "  "+in2.toString
+    case BinOpInter(op, in1, in2, target) => "\t"+target +"\t=  "+in1.toString + "  "+op.toString + "  "+in2.toString
     case LoadInter(source, target) => "\t "+target.toString + "\t= * "+source.toString
     case StoreInter(source, target) => "\t* "+target.toString + "\t=  "+source.toString
     case CopyInter(source, target) => "\t "+target.toString + "\t=  "+source.toString
@@ -15,6 +15,7 @@ abstract class InterInstr {
     case JumpNZInter(label, sourceVar) => "\tjump "+label+" if 0 != "+sourceVar
     case JumpNInter(label, sourceVar) => "\tjump "+label +" if 0 > "+sourceVar
     case CallInter(name, args, target) => "\t"+target + "= "+name + "("+ args.mkString(", ") + ")"
+    case AmpersandInter(name, target) => "\t"+target+"= &" +name
     case PushInter => "\tpush;"
     case PopInter(target) => "\tpop "+target+";"
     case CommentInter(comment) => "; " + comment
@@ -55,6 +56,12 @@ abstract class InterInstr {
       else
         this
     }
+    case AmpersandInter(x,target) => {
+      if (target == oldTarget)
+        AmpersandInter(x, newTarget)
+      else
+        this
+    }
 
     case _ => this
   }
@@ -76,6 +83,7 @@ abstract class InterInstr {
     case CommentInter(_) => List()
     case ReturnWithValInter(x) => List(x)
     case ReturnVoidInter => List()
+    case AmpersandInter(_,_) => List()
   }
 
   // TODO: I should also check this
@@ -85,6 +93,7 @@ abstract class InterInstr {
     case CopyInter(_,o) => List(o)
     case PopInter(o) => List(o)
     case CallInter(_,_,Some(x)) => List(x)
+    case AmpersandInter(_,x) => List(x)
     case _ => List()
   }
 
@@ -101,6 +110,7 @@ case class JumpZInter(label: String, sourceVar: VarOrLit) extends InterInstr
 case class JumpNInter(label: String, sourceVar: VarOrLit) extends InterInstr
 case class JumpNZInter(label: String, sourceVar: VarOrLit) extends InterInstr
 case class CallInter(name: String, args: List[VarOrLit], target:Option[String]) extends InterInstr
+case class AmpersandInter(name: String, target: String) extends InterInstr
 case object PushInter extends InterInstr
 case class PopInter(target: String) extends InterInstr
 case class CommentInter(comment: String) extends InterInstr

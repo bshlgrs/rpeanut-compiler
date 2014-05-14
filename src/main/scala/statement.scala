@@ -60,6 +60,7 @@ case class Assignment(name: String, rhs: Expr) extends Statement {
 
   }
 }
+
 case class IndirectAssignment(lhs: Expr, rhs: Expr) extends Statement {
   override def toIntermediate(): List[InterInstr] = {
     val (lhsInstr, lhsVar) = lhs.toIntermediate()
@@ -130,7 +131,7 @@ case class VoidFunctionCall(name: String, args: List[Expr]) extends Statement {
       val vars = for ((code, varOrLit) <- arg_code) yield varOrLit
       val callInstruction = CallInter(name, vars, None)
 
-      code :+ callInstruction
+      CommentInter(this.toString()) +: code :+ callInstruction
   }
 }
 

@@ -1,11 +1,7 @@
 def main() {
-  printInt(factorial(5));
-  printInt("whatever");
-}
-
-def factorial(x) {
-  if (x==0) {
-    return 1;
+  x = 0;
+  while(x<10) {
+    printInt(x);
+    x = (x+1);
   }
-  return (x*factorial((x-1)));
 }
