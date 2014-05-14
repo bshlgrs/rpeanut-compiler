@@ -1,7 +1,32 @@
 def main() {
-  x = 0;
-  while(x<10) {
-    printInt(x);
-    x = (x+1);
+  x = "hello";
+  puts(x);
+
+  printInt(stringLength(x));
+  reverse(x);
+  puts(x);
+}
+
+def stringLength(string) {
+  out = 0;
+  while (*string != 0) {
+    string++;
+    out++;
   }
+  return out;
+}
+
+def reverse(string) {
+  length = stringLength(string);
+  halfLength = (length/2);
+  for (x = 0; (x<length); x++) {
+    temp = string[x];
+    string[x] = string[((length-x)-1)];
+    string[((length-x)-1)] = temp;
+  }
+}
+
+def bubbleSort(string) {
+  length = stringLength(string);
+
 }

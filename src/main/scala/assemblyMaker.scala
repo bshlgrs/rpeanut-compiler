@@ -58,9 +58,7 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
 
   def assemble(): List[Assembly] = {
     emit(ASM_Label(block.name))
-    emit(ASM_Comment("Locals are ["+locals.keys.mkString(", ")+"]"))
-
-    println("locals are: "+locals)
+    emit(ASM_Comment("Locals are ["+locals+"]"))
 
     for((inter, index : Int) <- block.code.view.zipWithIndex) {
       // inter match {
@@ -68,6 +66,11 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
       //   case LabelInter(_) => ()
       //   case _ => emit(ASM_Comment("### "+inter.toString()))
       // }
+
+      if (false) {
+        println("Compiling "+inter)
+        println("Registers are "+ registers.mkString(","))
+      }
 
       // emit(ASM_Comment("   # registers are "+registers.mkString(",")))
 
@@ -187,6 +190,8 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
             emit(ASM_BinOp(SubOp, StackPointer, getInputRegister(VOLLit(args.length)), StackPointer))
           stackOffset -= args.length
 
+
+
           // Pop return value from the stack.
           returnValue match {
             case None => emit(ASM_Pop(ZeroRegister))
@@ -208,6 +213,8 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
           if (localsSize != 0)
             emit(ASM_BinOp(SubOp, StackPointer, getInputRegister(VOLLit(localsSize)), StackPointer))
           stackOffset -= localsSize
+
+          assert(stackOffset == 0)
         }
         case PushInter => emit(ASM_Push(ZeroRegister))
         case PopInter(target) => {
@@ -224,6 +231,7 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
         case ReturnVoidInter => emit(ASM_Return)
       }
     }
+
     saveUnsynchedVariables()
 
     code
@@ -320,8 +328,18 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
       option_vol match {
         case None => return index
         case Some(vol) => {
-          if (isUnneeded(vol))
-            return index
+          if (isUnneeded(vol)) {
+            vol match {
+              case VOLVar(name) => {
+                if (isPermanent(name) && ! synched(name))
+                  emitStore(name, index)
+                return index
+              }
+              case VOLLit(_) => {
+                return index
+              }
+            }
+          }
         }
       }
     }
@@ -391,7 +409,7 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
       case VOLLit(x) => false //currentLine().inputVars contains vol
       case VOLVar(name) => {
         // loop through positions after the current position.
-        for(line <- block.code.drop(position)) {
+        for(line <- block.code.drop(position + 1)) {
           if (line.inputVars contains VOLVar(name))
             return false
           else if (line.outputVars contains name)

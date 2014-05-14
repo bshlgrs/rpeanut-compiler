@@ -121,7 +121,7 @@ object Compile extends CParser {
       }
       case "compile" => {
         compile(io.Source.fromFile(args(1)).mkString)
-        println(output.toString + stringSection.mkString("\n\n"))
+        println(output.toString)
         return;
       }
     }
@@ -139,20 +139,19 @@ object Compile extends CParser {
             stringSection.append(hash+": block #"+x)
           }
 
-
+          println(function.toIntermediate().mkString("\n"))
           if (function.name == "main")
             output.append("0x0100:\n")
           output.append(function.toAssembly(globals.toList).mkString("\n")+"\n")
-
-          println(function.toIntermediate().mkString("\n"))
         }
 
-        output.append(stringSection.distinct.mkString("\n\n"))
-
+        output.append("\n\n; Library functions:\n")
         for ((function, implementation) <- StandardLibrary.standardLibrary) {
           if (output.toString.contains(function))
             output.append(implementation)
         }
+
+        output.append("\n; Data section: \n"+stringSection.distinct.mkString("\n\n"))
         // println(RPeANutWrapper.runAssembly(output.toString()))
 
       }
