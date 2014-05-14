@@ -1,8 +1,5 @@
 def main() {
   x = "hello";
-  puts(x);
-
-  printInt(stringLength(x));
   reverse(x);
   puts(x);
 }
@@ -20,6 +17,7 @@ def reverse(string) {
   length = stringLength(string);
   halfLength = (length/2);
   for (x = 0; (x<length); x++) {
+    puts(string);
     temp = string[x];
     string[x] = string[((length-x)-1)];
     string[((length-x)-1)] = temp;

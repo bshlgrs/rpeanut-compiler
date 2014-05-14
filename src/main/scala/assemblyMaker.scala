@@ -408,7 +408,9 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
        // This is a shitty temporary solution which will sometimes break everything!
       case VOLLit(x) => false //currentLine().inputVars contains vol
       case VOLVar(name) => {
-        // loop through positions after the current position.
+        if (block.code(position).inputVars contains(VOLVar(name)))
+          return false
+
         for(line <- block.code.drop(position + 1)) {
           if (line.inputVars contains VOLVar(name))
             return false
