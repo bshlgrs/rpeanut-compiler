@@ -54,6 +54,6 @@ class Function(val name: String, params: List[String], body: List[Statement]) {
                                    globals,
                                    Some(returnPosition),
                                    localVars.length)
-                                      .assemble() }).flatten :+ ASM_Halt
+                                      .assemble() }).flatten :+ ASM_Return
   }
 }

@@ -1,6 +1,9 @@
 def main() {
-  x = "hello";
+  x = "abcde";
+  puts(x);
   reverse(x);
+  puts(x);
+  bubbleSort(x);
   puts(x);
 }
 
@@ -16,8 +19,7 @@ def stringLength(string) {
 def reverse(string) {
   length = stringLength(string);
   halfLength = (length/2);
-  for (x = 0; (x<length); x++) {
-    puts(string);
+  for (x = 0; (x<halfLength); x++) {
     temp = string[x];
     string[x] = string[((length-x)-1)];
     string[((length-x)-1)] = temp;
@@ -26,5 +28,13 @@ def reverse(string) {
 
 def bubbleSort(string) {
   length = stringLength(string);
-
+  for(k = 0; (k<length); k++) {
+    for(i = 0; (i < (length - 1)); i++) {
+      if (string[i] > string[(i+1)]) {
+        temp = string[i];
+        string[i] = string[(i+1)];
+        string[(i+1)] = temp;
+      }
+    }
+  }
 }
