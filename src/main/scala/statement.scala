@@ -48,13 +48,16 @@ sealed abstract class Statement {
 case class Assignment(name: String, rhs: Expr) extends Statement {
   override def toIntermediate(): List[InterInstr] = {
     var (exprInters, resultPlace) = rhs.toIntermediate()
+    if (exprInters.length == 0)
+      return List(CopyInter(resultPlace, name))
+
     resultPlace match {
       case VOLVar(x) => {
         var changedInters = exprInters.map {_.changeTarget(x, name)}
         CommentInter(this.toString()) +: changedInters
       }
       case VOLLit(n) => {
-        List(CopyInter(VOLLit(n), name))
+        List(CommentInter(this.toString()), CopyInter(VOLLit(n), name))
       }
     }
 

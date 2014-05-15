@@ -3,7 +3,7 @@
 This sorta compiles a language like C to rPeANUt assembly:
 
 ```
-$ scala Compile "def difference(x,y) { if (x > y) { return (x-y) ;} else { return (y-x); } }"
+$ compile "def difference(x,y) { if (x > y) { return (x-y) ;} else { return (y-x); } }"
 
 difference:
 starting-block-5:
