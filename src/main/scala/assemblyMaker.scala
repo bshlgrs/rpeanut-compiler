@@ -58,7 +58,6 @@ class BlockAssembler(block: Block, locals: Map[String, Int],
 
   def assemble(): List[Assembly] = {
     emit(ASM_Label(block.name))
-    emit(ASM_Comment("Locals are ["+locals+"]"))
 
     for((inter, index : Int) <- block.code.view.zipWithIndex) {
       // inter match {

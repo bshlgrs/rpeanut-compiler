@@ -81,12 +81,13 @@ case class IfElse(condition: BoolExpr,
     val thenCode = StatementHelper.statementsToIntermediate(thenBlock)
     val elseCode = StatementHelper.statementsToIntermediate(elseBlock)
 
-    return (List(CommentInter("if (" + condition.toString + ") {")) :::
+    return (List(CommentInter("if (" + condition.toString + ")")) :::
             conditionCode :::
-            List(CommentInter("} else {")) :::
+            List(CommentInter("{")) :::
             List(LabelInter("then-"+counter.toString)) :::
             (thenCode :+
             JumpInter("end-"+counter.toString) :+
+            CommentInter("} else {") :+
             LabelInter("else-"+counter.toString)) :::
             (elseCode :+
             LabelInter("end-"+counter.toString)) :::
