@@ -58,7 +58,6 @@ case class Assignment(name: String, rhs: Expr) extends Statement {
         List(CommentInter(this.toString()), CopyInter(VOLLit(n), name))
       }
     }
-
   }
 }
 

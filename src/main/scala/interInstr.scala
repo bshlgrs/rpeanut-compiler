@@ -98,6 +98,15 @@ sealed abstract class InterInstr {
   }
 
   def allVars():List[String] = inputVars.map{_.varListIfVar()}.flatten ::: outputVars
+
+  // This is the place that an instruction might jump to within its own function.
+  def jumpTargets(): Option[String] = this match {
+    case JumpInter(x) => Some(x)
+    case JumpZInter(x,_) => Some(x)
+    case JumpNInter(x,_) => Some(x)
+    case JumpNZInter(x,_) => Some(x)
+    case _ => None
+  }
 }
 
 case class BinOpInter(op: BinOperator, in1: VarOrLit, in2: VarOrLit, targetVar: String) extends InterInstr

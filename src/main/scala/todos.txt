@@ -1,15 +1,15 @@
 Todos:
 
 1. Parser
-all to do
+needs improving
 
 2. Compiler to intermediate needs:
   - function calls DONE
-  - deal with whole programs
-  - &lol
-  - return statement
+  - deal with whole programs DONE
+  - &lol -- needs fixing
+  - return statement DONE
   - if expression DONE
-  - division
+  - division DONE
 
 3. Intermediate to assembly:
-throw new Exception("unimplemented")
+needs more efficiency
