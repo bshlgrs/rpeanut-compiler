@@ -34,29 +34,46 @@ class JSON extends JavaTokenParsers {
 
 class CParser extends JavaTokenParsers {
   def expr: Parser[Expr] = (
-             "("~expr~op~expr~")" ^^ {case _~e1~op~e2~_ => BinOp(op, e1, e2)}
-           | "true" ^^ (x => Lit(1))
+             term~"+"~term ^^ {case e1~_~e2 => BinOp(AddOp, e1, e2)}
+           | term~"-"~term ^^ {case e1~_~e2 => BinOp(SubOp, e1, e2)}
+           | "("~boolExpr~")"~"?"~expr~":"~expr ^^ { case _~i~_~_~t~_~e => IfExpression(i,t,e) }
+           | term )
+
+  def term: Parser[Expr] = (
+            factor~"*"~factor ^^ {case e1~_~e2 => BinOp(MulOp, e1, e2)}
+          | factor~"/"~factor ^^ {case e1~_~e2 => BinOp(DivOp, e1, e2)}
+          | factor~"%"~factor ^^ {case e1~_~e2 => BinOp(ModOp, e1, e2)}
+          | factor
+          )
+  def factor: Parser[Expr] = (
+             "true" ^^ (x => Lit(1))
            | "false" ^^ (x => Lit(0))
            | ident~"["~expr~"]" ^^ {case i~_~e~_ => Load(BinOp(AddOp, Var(i), e))}
-           | boolExpr~"?"~expr~":"~expr ^^ { case i~_~t~_~e => IfExpression(i,t,e) }
            | "*"~expr ^^ {case _~e1 => Load(e1) }
            | ident ~ "("~ repsep(expr, ",")~")" ^^ { case x~_~a~_ => FunctionCall(x,a) }
            | ident ^^ { Var(_) }
            | wholeNumber ^^ (x => Lit(x.toInt))
            | """'\S'""".r ^^ (x => Lit(x.charAt(1).toInt) )
            | stringLiteral ^^ { StringLiteral(_)}
+           | "("~expr~")" ^^ {case _~x~_ => x}
+           | "-"~factor ^^ {case _~f => BinOp(SubOp, Lit(0), f)}
            )
 
   def boolExpr: Parser[BoolExpr] = (
-      "("~expr~"=="~expr~")" ^^ {case _~e1~_~e2~_ => BoolBinOp(Equals,e1,e2)}
-    | "("~expr~">"~expr~")" ^^ {case _~e1~_~e2~_ => BoolBinOp(GreaterThan,e1,e2)}
-    | "("~expr~"<"~expr~")" ^^ {case _~e1~_~e2~_ => BoolBinOp(GreaterThan,e2,e1)}
-    | "("~expr~">="~expr~")" ^^ {case _~e1~_~e2~_ => BoolBinOp(GreaterOrEqual,e1,e2)}
-    | "("~expr~"<="~expr~")" ^^ {case _~e1~_~e2~_ => BoolBinOp(GreaterOrEqual,e2,e1)}
-    | "("~expr~"!="~expr~")" ^^ {case _~e1~_~e2~_ => NotExpr(BoolBinOp(Equals,e2,e1))}
-    | "("~boolExpr~"&&"~boolExpr~")" ^^ {case _~l~_~r~_ => AndExpr(l,r)}
-    | "("~boolExpr~"||"~boolExpr~")" ^^ {case _~l~_~r~_ => OrExpr(l,r)}
+      boolTerm~"&&"~boolTerm ^^ {case l~_~r => AndExpr(l,r)}
+    | boolTerm~"||"~boolTerm ^^ {case l~_~r => OrExpr(l,r)}
     | "!"~boolExpr ^^ {case _~x => NotExpr(x)}
+    | boolTerm
+    )
+
+  def boolTerm: Parser[BoolExpr] = (
+        "("~expr~"=="~expr~")" ^^ {case _~e1~_~e2~_ => BoolBinOp(Equals,e1,e2)}
+      | "("~expr~">"~expr~")" ^^ {case _~e1~_~e2~_ => BoolBinOp(GreaterThan,e1,e2)}
+      | "("~expr~"<"~expr~")" ^^ {case _~e1~_~e2~_ => BoolBinOp(GreaterThan,e2,e1)}
+      | "("~expr~">="~expr~")" ^^ {case _~e1~_~e2~_ => BoolBinOp(GreaterOrEqual,e1,e2)}
+      | "("~expr~"<="~expr~")" ^^ {case _~e1~_~e2~_ => BoolBinOp(GreaterOrEqual,e2,e1)}
+      | "("~expr~"!="~expr~")" ^^ {case _~e1~_~e2~_ => NotExpr(BoolBinOp(Equals,e2,e1))}
+      | "("~boolExpr~")" ^^ {case _~x~_ => x }
     )
 
   def op: Parser[BinOperator] = ("+" ^^ (x => AddOp)
@@ -72,7 +89,7 @@ class CParser extends JavaTokenParsers {
           | "if"~ boolExpr~block~"else"~block
             ^^ {case _~b~i~_~e => IfElse(b,i,e) }
           | "if"~ boolExpr ~ block ^^ {case _~b~i => IfElse(b,i,Nil)}
-          | "while"~ boolExpr ~ block ^^ {case _~b~i => While(b,i)}
+          | "while"~boolExpr ~ block ^^ {case _~b~i => While(b,i)}
           | "for"~"("~atomicStatement~";"~boolExpr~";"~atomicStatement~")"~block ^^
               { case _~_~a~_~b~_~c~_~d => ForLoop(a,b,c,d) }
           | "*"~expr~ "=" ~ expr~";" ^^ {case _~a~_~b~_ => IndirectAssignment(a,b)}

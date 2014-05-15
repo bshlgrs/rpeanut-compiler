@@ -18,11 +18,11 @@ def stringLength(string) {
 
 def reverse(string) {
   length = stringLength(string);
-  halfLength = (length/2);
+  halfLength = length/2;
   for (x = 0; (x<halfLength); x++) {
     temp = string[x];
-    string[x] = string[((length-x)-1)];
-    string[((length-x)-1)] = temp;
+    string[x] = string[(length-x)-1];
+    string[(length-x)-1] = temp;
   }
 }
 
