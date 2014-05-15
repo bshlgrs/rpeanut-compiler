@@ -139,7 +139,7 @@ object Compile extends CParser {
             stringSection.append(hash+": block #"+x)
           }
 
-          println(function.toIntermediate().mkString("\n"))
+          // println(function.toIntermediate().mkString("\n"))
           if (function.name == "main")
             output.append("0x0100:\n")
           output.append(function.toAssembly(globals.toList).mkString("\n")+"\n")

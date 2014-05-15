@@ -41,8 +41,6 @@ sealed abstract class Statement {
     case Return(Some(x)) => List(x)
     case Return(None) => List()
   }
-
-
 }
 
 case class Assignment(name: String, rhs: Expr) extends Statement {

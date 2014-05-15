@@ -1,5 +1,5 @@
 def main() {
-  x = "abcde";
+  x = "abcdefgh";
   puts(x);
   reverse(x);
   puts(x);

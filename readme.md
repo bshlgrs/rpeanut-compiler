@@ -30,21 +30,7 @@ end-1:
 
 It's not very fully featured, but it's coming along slowly!
 
-## Things that do work
-
-The following code works fine:
-```
-def main() {
-  x = printInt(factorial2(6));
-}
-
-def factorial2(x) {
-  if (x==0) {
-    return 1;
-  }
-  return (x*factorial2((x-1)));
-}
-```
+Check out `examples/simple.c` for an example pseudo-C file, and `examples/simple.s` for what it translates to.
 
 ## Incomplete list of things that don't work
 - Ternary operator
@@ -62,3 +48,8 @@ def factorial2(x) {
 
 ## Notes
 - I don't promise to calculate expressions in the order they were inputted.
+
+# Time taken
+
+I'll keep updating the steps that examples/simple.c takes to run:
+- 14th May: 2002
