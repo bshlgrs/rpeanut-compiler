@@ -10,6 +10,7 @@ class Function(val name: String, params: List[String], body: List[Statement]) {
   override def toString() = ("def " + name + "(" + params.mkString(", ") +
               ") {\n" + body.mkString("\n") + "\n}")
 
+  // Style question: should this be def or val?
   def toIntermediate(): List[InterInstr] = {
     var out = List[InterInstr]()
     for (line <- body) {
@@ -28,8 +29,26 @@ class Function(val name: String, params: List[String], body: List[Statement]) {
 
   // Trust me, I write compilers, I know what I'm doing...
   val localVars: List[String] =  {
-    blocks.map{_.varsMentioned}.flatten.groupBy{x=>x}
-      .mapValues (_.length).filter{_._2 > 1}.keys.toList.filterNot(params.contains(_))
+    allVars.filter{isLocal(_)}
+  }
+
+  //   // Trust me, I write compilers, I know what I'm doing...
+  // val localVars: List[String] =  {
+  //   blocks.map{_.varsMentioned}.flatten.filterNot((params ::: tempVars).contains(_))
+  // }
+
+  // val tempVars: List[String] = {
+  //   blocks.map{_.varsMentioned}.flatten.groupBy{x=>x}
+  //     .mapValues (_.length).filter{_._2 == 1}.keys.toList.filterNot(params.contains(_))
+  //     .take(6)
+  // }
+
+  def allVars: List[String] = {
+    blocks.map{_.varsMentioned}.flatten.distinct
+  }
+
+  def isLocal(name: String): Boolean = {
+    blocks.map{_.varsMentioned}.flatten.count{_ == name} > 1
   }
 
   val localsMap: Map[String, Int] = {
@@ -55,5 +74,13 @@ class Function(val name: String, params: List[String], body: List[Statement]) {
                                    Some(returnPosition),
                                    localVars.length)
                                       .assemble() }).flatten :+ ASM_Return
+  }
+
+  def functionDependencies(): List[String] = {
+    for (CallInter(x, _, _) <- this.toIntermediate()) yield x
+  }
+
+  def isProcedure(): Boolean = {
+    functionDependencies().length == 0
   }
 }

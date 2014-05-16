@@ -1,4 +1,4 @@
-def main() {
+void main() {
   x = "abcdefgh";
   puts(x);
   reverse(x);
@@ -7,7 +7,7 @@ def main() {
   puts(x);
 }
 
-def stringLength(string) {
+int stringLength(string) {
   out = 0;
   while (*string != 0) {
     string++;
@@ -16,7 +16,7 @@ def stringLength(string) {
   return out;
 }
 
-def reverse(string) {
+void reverse(string) {
   length = stringLength(string);
   halfLength = length/2;
   for (x = 0; (x<halfLength); x++) {
@@ -26,7 +26,7 @@ def reverse(string) {
   }
 }
 
-def bubbleSort(string) {
+void bubbleSort(string) {
   length = stringLength(string);
   for(k = 0; (k<length); k++) {
     for(i = 0; (i < (length - 1)); i++) {

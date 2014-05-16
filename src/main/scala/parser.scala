@@ -108,7 +108,7 @@ class CParser extends JavaTokenParsers {
   def block: Parser[List[statement.Statement]] = ( "{"~> rep(stat) <~"}"
                                        | stat ^^ { List(_) })
   def func: Parser[function.Function] = (
-            ("def")~ ident ~ "(" ~ repsep(ident,",") ~ ")" ~ block
+            ("int"|"void")~ ident ~ "(" ~ repsep(ident,",") ~ ")" ~ block
             ^^ {case _~name~_~args~_~bl => new function.Function(name, args, bl)})
 
   def program: Parser[List[function.Function]] = rep(func)
@@ -160,6 +160,8 @@ object Compile extends CParser {
           if (function.name == "main")
             output.append("0x0100:\n")
           output.append(function.toAssembly(globals.toList).mkString("\n")+"\n")
+
+          println(function.name+ " is procedure: " +function.isProcedure())
         }
 
         output.append("\n\n; Library functions:\n")
