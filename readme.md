@@ -35,7 +35,7 @@ Check out `examples/simple.c` for an example pseudo-C file, and `examples/simple
 ## Incomplete list of things that don't work
 - Ternary operator
 - Global variables
-- String literals or array literals
+- String literals
 
 ## Things which should be in the standard library
 - printString
@@ -48,6 +48,11 @@ Check out `examples/simple.c` for an example pseudo-C file, and `examples/simple
 
 ## Notes
 - I don't promise to calculate expressions in the order they were inputted.
+
+## Todos
+
+- Global variables
+- Arrays
 
 # Time taken
 
