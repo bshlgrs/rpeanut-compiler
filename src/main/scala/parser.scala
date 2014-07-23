@@ -21,15 +21,14 @@ class JSON extends JavaTokenParsers {
     stringLiteral~":"~value ^^
       { case name~":"~value => (name, value) }
 
-  def value: Parser[Any] = (
-    obj
-  | arr
-  | stringLiteral
-  | floatingPointNumber ^^ (_.toDouble)
-  | "null"  ^^ (x => null)
-  | "true"  ^^ (x => true)
-  | "false" ^^ (x => false)
-  )
+  def value: Parser[Any] = ( obj
+                           | arr
+                           | stringLiteral
+                           | floatingPointNumber ^^ (_.toDouble)
+                           | "null"  ^^ (x => null)
+                           | "true"  ^^ (x => true)
+                           | "false" ^^ (x => false)
+                           )
 }
 
 class CParser extends JavaTokenParsers {

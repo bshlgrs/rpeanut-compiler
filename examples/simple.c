@@ -1,12 +1,3 @@
-void main() {
-  x = "abcdefgh";
-  puts(x);
-  reverse(x);
-  puts(x);
-  bubbleSort(x);
-  puts(x);
-}
-
 int stringLength(string) {
   out = 0;
   while (*string != 0) {
@@ -37,4 +28,13 @@ void bubbleSort(string) {
       }
     }
   }
+}
+
+void main() {
+  x = "abcdefgh";
+  puts(x);
+  reverse(x);
+  puts(x);
+  bubbleSort(x);
+  puts(x);
 }

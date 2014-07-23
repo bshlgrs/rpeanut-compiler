@@ -92,6 +92,5 @@ putsLoop:
   store R1 0xFFF0
   return
   """
-
   )
 }

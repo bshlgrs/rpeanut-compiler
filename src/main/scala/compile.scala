@@ -22,8 +22,6 @@ object Compile extends CParser {
   }
 
   def compile(inputString: String) {
-    output.append("; Compiled by Buck's rPeANUt compiler!!!\n")
-    output.append("0x0001:\n\tjump 0x0100\n\n")
     parseAll(program, inputString) match {
       case Success(result, _) => {
         for (function <- result) {
@@ -34,9 +32,14 @@ object Compile extends CParser {
           }
 
           // println(function.toIntermediate().mkString("\n"))
-          if (function.name == "main")
-            output.append("0x0100:\n")
-          output.append(function.toAssembly(globals.toList).mkString("\n")+"\n")
+          if (function.name == "main") {
+
+            output.insert(0, function.toAssembly(globals.toList).mkString("\n")+"\n")
+            output.insert(0, "0x0100:\n")
+          }
+          else {
+            output.append(function.toAssembly(globals.toList).mkString("\n")+"\n")
+          }
 
           println(function.name+ " is procedure: " +function.isProcedure())
         }
@@ -46,6 +49,10 @@ object Compile extends CParser {
           if (output.toString.contains(function))
             output.append(implementation)
         }
+
+        output.insert(0,"0x0001:\n\tjump 0x0100\n\n")
+        output.insert(0,"; Compiled by Buck's rPeANUt compiler!!!\n")
+
 
         output.append("\n; Data section: \n"+stringSection.distinct.mkString("\n\n"))
         // println(RPeANutWrapper.runAssembly(output.toString()))
