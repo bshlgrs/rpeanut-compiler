@@ -57,7 +57,7 @@ class Function(val name: String, params: List[String], val vars: Map[String, Int
 
     var currentPlace = 1
 
-    for ((x:String, i:Int) <- localVars.view.zipWithIndex) {
+    for ((x:String, i:Int) <- (localVars ++ vars.keys).removeDuplicates.zipWithIndex) {
       dict(x) = currentPlace
       if (vars contains x)
         currentPlace = currentPlace + vars(x)

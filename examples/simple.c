@@ -10,7 +10,7 @@ int stringLength(string)
 }
 
 void reverse(string)
-  (length (halfLength 2) x temp) {
+  (length halfLength x temp) {
   length = stringLength(string);
   halfLength = length/2;
   for (x = 0; (x<halfLength); x++) {
