@@ -31,9 +31,7 @@ object Compile extends CParser {
             stringSection.append(hash+": block #"+x)
           }
 
-          // println(function.toIntermediate().mkString("\n"))
           if (function.name == "main") {
-
             output.insert(0, function.toAssembly(globals.toList).mkString("\n")+"\n")
             output.insert(0, "0x0100:\n")
           }
@@ -41,8 +39,6 @@ object Compile extends CParser {
             output.append(function.toAssembly(globals.toList).mkString("\n")+"\n")
           }
 
-          println(function.name+ " is procedure: " +function.isProcedure())
-          println(function.toString());
         }
 
         output.append("\n\n; Library functions:\n")

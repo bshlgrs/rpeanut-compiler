@@ -6,7 +6,7 @@ import assembly._
 import assemblyMaker._
 import expr._
 
-class Function(val name: String, params: List[String], val vars: List[Tuple2[String, Integer]],
+class Function(val name: String, params: List[String], val vars: Map[String,Integer],
                                                            body: List[Statement]) {
   override def toString() = ("def " + name + "(" + params.mkString(", ") +
               ") (" + vars.mkString(", ") + ") {\n" + body.mkString("\n") + "\n}")
@@ -55,12 +55,19 @@ class Function(val name: String, params: List[String], val vars: List[Tuple2[Str
   val localsMap: Map[String, Int] = {
     var dict = collection.mutable.Map[String, Int]()
 
+    //
     for ((x:String, i:Int) <- params.view.zipWithIndex) {
       dict(x) = i - params.length
     }
 
+    var currentPlace = 1
+
     for ((x:String, i:Int) <- localVars.view.zipWithIndex) {
       dict(x) = i + 1
+      // if (vars contains x)
+      //   currentPlace = currentPlace + vars(x)
+      // else
+      //   currentPlace = currentPlace + 1
     }
 
     dict.toMap

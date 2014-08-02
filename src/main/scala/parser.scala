@@ -109,7 +109,7 @@ class CParser extends JavaTokenParsers {
   def func: Parser[function.Function] = (
             ("int"|"void")~ ident ~ "(" ~ repsep(ident,",") ~ ")" ~ varDecs ~ block
             ^^ {case _~name~_~args~_~varDecs~bl =>
-                          new function.Function(name, args, varDecs, bl)})
+                          new function.Function(name, args, varDecs.toMap, bl)})
 
   def varDecs: Parser[List[Tuple2[String, Integer]]] = (
           "("~rep(varDec)~")" ^^ {case _~list~_ => list}

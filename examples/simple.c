@@ -34,7 +34,7 @@ void bubbleSort(string) (length k i temp) {
 }
 
 void main() () {
-  x = "abcdefgh";
+  x = "dcba";
   puts(x);
   reverse(x);
   puts(x);
