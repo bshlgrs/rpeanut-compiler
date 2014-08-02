@@ -118,7 +118,7 @@ class CParser extends JavaTokenParsers {
   def varDec: Parser[Tuple2[String, Integer]] = (
            // ident~wholeNumber ^^ { case x~y => new Tuple2(x, y.toInt) }
            ident ^^ ( x => new Tuple2(x, 1 : scala.Integer) )
-         // | ident~wholeNumber ^^ { case x~y => new Tuple2(x, y.toInt) }
+         | "("~ident~wholeNumber~")" ^^ { case _~x~y~_ => new Tuple2(x, y.toInt) }
       )
 
   def program: Parser[List[function.Function]] = rep(func)

@@ -10,7 +10,7 @@ int stringLength(string)
 }
 
 void reverse(string)
-  (length halfLength x temp) {
+  (length (halfLength 2) x temp) {
   length = stringLength(string);
   halfLength = length/2;
   for (x = 0; (x<halfLength); x++) {
@@ -34,7 +34,7 @@ void bubbleSort(string) (length k i temp) {
 }
 
 void main() () {
-  x = "dcba";
+  x = "abcd";
   puts(x);
   reverse(x);
   puts(x);

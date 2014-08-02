@@ -6,7 +6,7 @@ import assembly._
 import assemblyMaker._
 import expr._
 
-class Function(val name: String, params: List[String], val vars: Map[String,Integer],
+class Function(val name: String, params: List[String], val vars: Map[String, Integer],
                                                            body: List[Statement]) {
   override def toString() = ("def " + name + "(" + params.mkString(", ") +
               ") (" + vars.mkString(", ") + ") {\n" + body.mkString("\n") + "\n}")
@@ -29,20 +29,15 @@ class Function(val name: String, params: List[String], val vars: Map[String,Inte
   val returnPosition = - params.length - 1
 
   // Trust me, I write compilers, I know what I'm doing...
-  val localVars: List[String] =  {
-    allVars.filter{isLocal(_)}
-  }
-
-  //   // Trust me, I write compilers, I know what I'm doing...
   // val localVars: List[String] =  {
-  //   blocks.map{_.varsMentioned}.flatten.filterNot((params ::: tempVars).contains(_))
+  //   allVars.filter{isLocal(_)}
   // }
 
-  // val tempVars: List[String] = {
-  //   blocks.map{_.varsMentioned}.flatten.groupBy{x=>x}
-  //     .mapValues (_.length).filter{_._2 == 1}.keys.toList.filterNot(params.contains(_))
-  //     .take(6)
-  // }
+    // Trust me, I write compilers, I know what I'm doing...
+  val localVars: List[String] =  {
+    blocks.map{_.varsMentioned}.flatten.groupBy{x=>x}
+      .mapValues (_.length).filter{_._2 > 1}.keys.toList.filterNot(params.contains(_))
+  }
 
   def allVars: List[String] = {
     blocks.map{_.varsMentioned}.flatten.distinct
@@ -63,25 +58,26 @@ class Function(val name: String, params: List[String], val vars: Map[String,Inte
     var currentPlace = 1
 
     for ((x:String, i:Int) <- localVars.view.zipWithIndex) {
-      dict(x) = i + 1
-      // if (vars contains x)
-      //   currentPlace = currentPlace + vars(x)
-      // else
-      //   currentPlace = currentPlace + 1
+      dict(x) = currentPlace
+      if (vars contains x)
+        currentPlace = currentPlace + vars(x)
+      else
+        currentPlace = currentPlace + 1
     }
 
     dict.toMap
   }
 
   def toAssembly(globals: List[String]): List[Assembly] = {
+    val lol = (vars.values.toList.asInstanceOf[List[Int]]).sum
     ASM_Label(name) +:
     (for (block <- blocks) yield { new
-                    BlockAssembler(block,
-                                   localsMap,
-                                   globals,
-                                   Some(returnPosition),
-                                   localVars.length)
-                                      .assemble() }).flatten :+ ASM_Return
+      BlockAssembler(block,
+                     localsMap,
+                     globals,
+                     Some(returnPosition),
+                     localVars.length - vars.size + lol)
+                              .assemble() }).flatten :+ ASM_Return
   }
 
   def functionDependencies(): List[String] = {
