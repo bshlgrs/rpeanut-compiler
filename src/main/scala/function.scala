@@ -6,9 +6,10 @@ import assembly._
 import assemblyMaker._
 import expr._
 
-class Function(val name: String, params: List[String], body: List[Statement]) {
+class Function(val name: String, params: List[String], val vars: List[Tuple2[String, Integer]],
+                                                           body: List[Statement]) {
   override def toString() = ("def " + name + "(" + params.mkString(", ") +
-              ") {\n" + body.mkString("\n") + "\n}")
+              ") (" + vars.mkString(", ") + ") {\n" + body.mkString("\n") + "\n}")
 
   // Style question: should this be def or val?
   def toIntermediate(): List[InterInstr] = {

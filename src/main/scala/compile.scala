@@ -42,6 +42,7 @@ object Compile extends CParser {
           }
 
           println(function.name+ " is procedure: " +function.isProcedure())
+          println(function.toString());
         }
 
         output.append("\n\n; Library functions:\n")
@@ -51,8 +52,7 @@ object Compile extends CParser {
         }
 
         output.insert(0,"0x0001:\n\tjump 0x0100\n\n")
-        output.insert(0,"; Compiled by Buck's rPeANUt compiler!!!\n")
-
+        output.insert(0, "; Compiled by Buck's rPeANUt compiler!!!\n")
 
         output.append("\n; Data section: \n"+stringSection.distinct.mkString("\n\n"))
         // println(RPeANutWrapper.runAssembly(output.toString()))

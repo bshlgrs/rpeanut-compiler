@@ -107,15 +107,26 @@ class CParser extends JavaTokenParsers {
   def block: Parser[List[statement.Statement]] = ( "{"~> rep(stat) <~"}"
                                        | stat ^^ { List(_) })
   def func: Parser[function.Function] = (
-            ("int"|"void")~ ident ~ "(" ~ repsep(ident,",") ~ ")" ~ block
-            ^^ {case _~name~_~args~_~bl => new function.Function(name, args, bl)})
+            ("int"|"void")~ ident ~ "(" ~ repsep(ident,",") ~ ")" ~ varDecs ~ block
+            ^^ {case _~name~_~args~_~varDecs~bl =>
+                          new function.Function(name, args, varDecs, bl)})
+
+  def varDecs: Parser[List[Tuple2[String, Integer]]] = (
+          "("~rep(varDec)~")" ^^ {case _~list~_ => list}
+      )
+
+  def varDec: Parser[Tuple2[String, Integer]] = (
+           // ident~wholeNumber ^^ { case x~y => new Tuple2(x, y.toInt) }
+           ident ^^ ( x => new Tuple2(x, 1 : scala.Integer) )
+         // | ident~wholeNumber ^^ { case x~y => new Tuple2(x, y.toInt) }
+      )
 
   def program: Parser[List[function.Function]] = rep(func)
 }
 
 object RPeANutWrapper {
   def runAssembly(code: String):String = {
-    val writer = new PrintWriter(new File("/tmp/test.s" ))
+    val writer = new PrintWriter(new File("/tmp/test.s"))
 
     writer.write(code)
     writer.close()
