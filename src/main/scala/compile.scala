@@ -51,6 +51,19 @@ object Compile extends CParser {
         output.insert(0, "; Compiled by Buck's rPeANUt compiler!!!\n")
 
         output.append("\n; Data section: \n"+stringSection.distinct.mkString("\n\n"))
+
+        output.append("""
+; This is a heap, which is used by malloc
+0x3FF0:
+frontier:
+  block #0x4001
+next:
+  block #0x4000
+0x4000:
+  block #-1
+  block 0x2FFF
+
+""")
         // println(RPeANutWrapper.runAssembly(output.toString()))
 
       }

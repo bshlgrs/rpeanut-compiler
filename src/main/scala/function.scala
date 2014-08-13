@@ -50,7 +50,6 @@ class Function(val name: String, params: List[String], val vars: Map[String, Int
   val localsMap: Map[String, Int] = {
     var dict = collection.mutable.Map[String, Int]()
 
-    //
     for ((x:String, i:Int) <- params.view.zipWithIndex) {
       dict(x) = i - params.length
     }
@@ -58,11 +57,13 @@ class Function(val name: String, params: List[String], val vars: Map[String, Int
     var currentPlace = 1
 
     for ((x:String, i:Int) <- (localVars ++ vars.keys).removeDuplicates.zipWithIndex) {
-      dict(x) = currentPlace
-      if (vars contains x)
-        currentPlace = currentPlace + vars(x)
-      else
-        currentPlace = currentPlace + 1
+      if (!dict.contains(x)) {
+        dict(x) = currentPlace
+        if (vars.contains(x))
+          currentPlace = currentPlace + vars(x)
+        else
+          currentPlace = currentPlace + 1
+      }
     }
 
     dict.toMap

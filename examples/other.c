@@ -1,6 +1,8 @@
+int f(x) (x) {
+  return 2*x;
+}
+
 void main() (x) {
-  for(x=0; (x<1000); x++) {
-    puts("\n----------------\n---------------\n--------\n\n");
-    printInt(x);
-  }
+  x = f(4);
+  printInt(x);
 }

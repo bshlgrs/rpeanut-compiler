@@ -13,9 +13,6 @@
 ; My friend Ed Swernofsky came up with this algorithm, I just
 ; implemented it.
 
-; You can see a C version at https://github.com/BuckShlegeris/rpeanut-compiler/blob/master/ed's_malloc.c
-
-
 0x0100:
 	push R0
 	call malloc
@@ -47,7 +44,7 @@ malloc:
 	load next R0
 	load R0 R1 ; heap[next]
 
-	store R0 #-1 SP; return the malloc'd location
+	store R0 #-1 SP; return the mallocd location
 
 	jumpn R1 malloc_move_frontier ; if next >= 0
 
