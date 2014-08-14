@@ -75,25 +75,27 @@ class CParser extends JavaTokenParsers {
       | "("~boolExpr~")" ^^ {case _~x~_ => x }
     )
 
-  def op: Parser[BinOperator] = ("+" ^^ (x => AddOp)
-                                |"-" ^^ (x => SubOp)
-                                |"*" ^^ (x => MulOp)
-                                |"/" ^^ (x => DivOp)
-                                |"%" ^^ (x => ModOp))
+  def op: Parser[BinOperator] = ( "+" ^^ (x => AddOp)
+                                | "-" ^^ (x => SubOp)
+                                | "*" ^^ (x => MulOp)
+                                | "/" ^^ (x => DivOp)
+                                | "%" ^^ (x => ModOp))
 
   def stat: Parser[statement.Statement] = (
           "return"~";" ^^ (_ => Return(None))
           | "return"~expr~";" ^^ {case _~e~_ => Return(Some(e))}
           | atomicStatement<~";"
           | "if"~ boolExpr~block~"else"~block
-            ^^ {case _~b~i~_~e => IfElse(b,i,e) }
+           ^^ { case _~b~i~_~e => IfElse(b,i,e) }
           | "if"~ boolExpr ~ block ^^ {case _~b~i => IfElse(b,i,Nil)}
           | "while"~boolExpr ~ block ^^ {case _~b~i => While(b,i)}
           | "for"~"("~atomicStatement~";"~boolExpr~";"~atomicStatement~")"~block ^^
               { case _~_~a~_~b~_~c~_~d => ForLoop(a,b,c,d) }
           | "*"~expr~ "=" ~ expr~";" ^^ {case _~a~_~b~_ => IndirectAssignment(a,b)}
           | ident~"["~expr~"]"~"="~expr~";" ^^
-              {case a~_~b~_~_~e~_ => IndirectAssignment(BinOp(AddOp,Var(a),b),e)}
+              { case a~_~b~_~_~e~_ => IndirectAssignment(BinOp(AddOp,Var(a),b),e)}
+          | ident~"="~"{"~repsep(expr, ",")~"}"~";" ^^
+              { case a~_~_~stuff~_~_ => ArrayAssignment(a, stuff) }
           )
 
   def atomicStatement : Parser[statement.Statement] = (

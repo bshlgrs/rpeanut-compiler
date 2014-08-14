@@ -23,6 +23,8 @@ sealed abstract class Statement {
       case Some(expr) => "return " + expr.toString + ";"
       case None => "return;"
     }
+    case ArrayAssignment(name, stuff) => (name + " = { " + stuff.mkString(", ")
+                                              + " };")
   }
   def toIntermediate(): List[InterInstr]
 
@@ -40,6 +42,7 @@ sealed abstract class Statement {
                   d.map{_.allExpressions}.flatten)
     case Return(Some(x)) => List(x)
     case Return(None) => List()
+    case ArrayAssignment(_, stuff) => stuff
   }
 }
 
@@ -140,6 +143,29 @@ case class ForLoop(instr: Statement, cond: BoolExpr, iterator: Statement,
                           block: List[Statement]) extends Statement {
   override def toIntermediate() = {
     instr.toIntermediate() ::: While(cond, block :+ iterator).toIntermediate()
+  }
+}
+
+case class ArrayAssignment(name: String, exprs: List[Expr]) extends Statement {
+  override def toIntermediate(): List[InterInstr] = {
+    if (exprs.length == 0) {
+      return Nil
+    } else if (exprs.length == 1) {
+      return new IndirectAssignment(Var(name), exprs(0)).toIntermediate()
+    } else {
+      val counter = name+"-"+Counter.getCounter()
+      val start = CopyInter(VOLVar(name), counter)
+
+      val blockCode = (for {
+        (expr, index) <- exprs.view.zipWithIndex
+        val (instrs, resultPlace) = expr.toIntermediate()
+        } yield (instrs ::: List(StoreInter(resultPlace, VOLVar(counter))) ::: (
+                  List(BinOpInter(
+                      AddOp, VOLVar(counter), VOLLit(1), counter))))
+        ).toList.flatten // forget the last one
+
+      CommentInter(this.toString()) +: (start +: blockCode)
+    }
   }
 }
 
