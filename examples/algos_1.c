@@ -9,7 +9,7 @@ int stringLength(string)
   return out;
 }
 
-void longest_common_substring(str1, str2, table)
+int longest_common_substring(str1, str2, table)
                       (biggest i j len1 len2 best) {
   len1 = stringLength(str1);
   len2 = stringLength(str2);
