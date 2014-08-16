@@ -24,6 +24,7 @@ object Compile extends CParser {
   def compile(inputString: String) {
     parseAll(program, inputString) match {
       case Success(result, _) => {
+        println("successfully parsed, now compiling")
         for (function <- result) {
           for (x <- function.strings) {
             val hash = "string-"+x.hashCode()
