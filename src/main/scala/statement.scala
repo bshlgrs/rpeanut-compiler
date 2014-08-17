@@ -28,6 +28,10 @@ sealed abstract class Statement {
   }
   def toIntermediate(): List[InterInstr]
 
+  def toIntermediateWithFixed(fixed: List[String]): (List[InterInstr], List[InterInstr]) = {
+    throw new Exception("not implemented")
+  }
+
   def allExpressions: List[Expr] =  this match {
     case Assignment(_,rhs) => List(rhs)
     case VoidFunctionCall(_,args) => args
@@ -44,6 +48,15 @@ sealed abstract class Statement {
     case Return(None) => List()
     case ArrayAssignment(_, stuff) => stuff
   }
+
+  def variablesModified: List[String] = this match {
+    case Assignment(x,_) => List(x)
+    case IfElse(_, t, e) => ( t.map{_.variablesModified} ::: t.map{_.variablesModified}
+                                    ).flatten
+    case While(_, block) => block.map{_.variablesModified}.flatten
+    case ForLoop(a,b,c,d) => (a +: c +: d).map{_.variablesModified}.flatten
+    case _ => Nil
+  }
 }
 
 case class Assignment(name: String, rhs: Expr) extends Statement {
@@ -59,6 +72,23 @@ case class Assignment(name: String, rhs: Expr) extends Statement {
       }
       case VOLLit(n) => {
         List(CommentInter(this.toString()), CopyInter(VOLLit(n), name))
+      }
+    }
+  }
+
+  override def toIntermediateWithFixed(fixed:List[String]): (List[InterInstr], List[InterInstr]) = {
+    var (exprInters, exprFixed, resultPlace) = rhs.toIntermediateWithFixed(fixed)
+    if (exprInters.length == 0)
+      return (List(CopyInter(resultPlace, name)), exprFixed)
+
+    resultPlace match {
+      case VOLVar(x) => {
+        var changedInters = exprInters.map {_.changeTarget(x, name)}
+        // maybe I need to change fixed here too?
+        (CommentInter(this.toString()) +: changedInters, exprFixed)
+      }
+      case VOLLit(n) => {
+        (List(CommentInter(this.toString()), CopyInter(VOLLit(n), name)), Nil)
       }
     }
   }

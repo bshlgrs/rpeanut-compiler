@@ -1,5 +1,4 @@
-int stringLength(string)
-  (out)
+int stringLength(string) ()
   {
   out = 0;
   while (*string != 0) {
@@ -22,7 +21,7 @@ int isPalindrome(str, i, j) () {
 }
 
 int longest_palindromic_substring(str)
-    (best i j k len) {
+    () {
   best = 0;
   len = stringLength(str);
 
@@ -43,7 +42,7 @@ int longest_palindromic_substring(str)
 
 
 int longest_common_substring(str1, str2, table)
-                      (biggest i j len1 len2 best) {
+                      () {
   len1 = stringLength(str1);
   len2 = stringLength(str2);
   biggest = 0;
