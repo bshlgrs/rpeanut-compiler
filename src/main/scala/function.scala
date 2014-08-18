@@ -5,6 +5,8 @@ import interInstr._
 import assembly._
 import assemblyMaker._
 import expr._
+import varOrLit._
+import counter._
 
 class Function(val name: String, params: List[String], val vars: Map[String, Integer],
                                                            body: List[Statement]) {
@@ -20,12 +22,32 @@ class Function(val name: String, params: List[String], val vars: Map[String, Int
     out
   }
 
+  def toInline(vars: List[VarOrLit]): (List[InterInstr], VarOrLit) = {
+    val newVarNames = vars map (t => t -> (t match {
+          case VOLVar(x) => VOLVar(Counter.getTempVarName())
+          case VOLLit(x) => VOLLit(x)
+        })) toMap : Map[varOrLit.VarOrLit,varOrLit.VarOrLit];
+
+    val endLabel = Counter.getCounter() + "-end-inline-" + name;
+    val out = Counter.getTempVarName()
+
+    val copies = (for ( (inVar, hereVar) <- vars.zip(params)) yield {
+      CopyInter(inVar, hereVar)
+    }) : List[InterInstr]
+
+    val mainCode = toIntermediate.map{_.inline(newVarNames, out, endLabel)}.flatten :
+            List[InterInstr]
+
+    (copies ++ mainCode, VOLVar(out))
+  }
+
   val allExpressions: List[Expr] = body.map{_.allExpressions}.flatten
 
   val strings: List[String] = allExpressions.map{_.strings}.flatten
 
   val blocks: List[Block] = AssemblyMaker.separateIntoBlocks(toIntermediate)
 
+  // assumes uniform size
   val returnPosition = - params.length - 1
 
   // Trust me, I write compilers, I know what I'm doing...
@@ -39,8 +61,12 @@ class Function(val name: String, params: List[String], val vars: Map[String, Int
       .mapValues (_.length).filter{_._2 > 1}.keys.toList.filterNot(params.contains(_))
   }
 
-  def allVars: List[String] = {
+  val allVars: List[String] = {
     blocks.map{_.varsMentioned}.flatten.distinct
+  }
+
+  val varsModified: List[String] = {
+    blocks.map{_.code.map{_.outputVars()}}.flatten.flatten.distinct
   }
 
   def isLocal(name: String): Boolean = {

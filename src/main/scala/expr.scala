@@ -30,6 +30,10 @@ sealed abstract class Expr {
     case _ => List(this)
   }
 
+  def renameVariables(vars: List[VarOrLit]) = this match {
+    case _ => { throw new Exception("I should implement this...")}
+  }
+
   // def normalize: Expr = this match {
   //   case BinOp(op, l, r) =>
   // }
@@ -53,8 +57,7 @@ sealed abstract class Expr {
   }
 
   // returns (stuffToEvaluateEachTime, stuffToEvaluateOnce, whereTheResultIs)
-  def toIntermediateWithFixed(fixed: List[String]):
-                  (List[InterInstr], List[InterInstr], VarOrLit) = this match {
+  def toIntermediateWithFixed(fixed: List[String]): (List[InterInstr], List[InterInstr], VarOrLit) = this match {
     case Lit(n) => (Nil, Nil, VOLLit(n))
     case BinOp(op, e1, e2) => {
       val (lhsInstr, lhsFixed, lhsVar) = e1.toIntermediateWithFixed(fixed)

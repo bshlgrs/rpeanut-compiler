@@ -49,6 +49,8 @@ class CParser extends JavaTokenParsers {
            | "false" ^^ (x => Lit(0))
            | ident~"["~expr~"]" ^^ {case i~_~e~_ => Load(BinOp(AddOp, Var(i), e))}
            | "*"~expr ^^ {case _~e1 => Load(e1) }
+           | ident ~ "." ~ ident ~"(" ~repsep(expr, ",")~")" ^^ {
+                    case obj~_~method~_~args~_ => FunctionCall(method, Var(obj) +: args) }
            | ident ~ "("~ repsep(expr, ",")~")" ^^ { case x~_~a~_ => FunctionCall(x,a) }
            | ident ^^ { Var(_) }
            | wholeNumber ^^ (x => Lit(x.toInt))

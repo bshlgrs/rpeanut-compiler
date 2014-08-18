@@ -107,6 +107,19 @@ sealed abstract class InterInstr {
     case JumpNZInter(x,_) => Some(x)
     case _ => None
   }
+
+  def inline(newNames: Map[VarOrLit, VarOrLit], out: String, endLabel: String): List[InterInstr] = {
+    rename(newNames) match {
+      case ReturnVoidInter => throw new Exception("trying to inline void function")
+      case ReturnWithValInter(value) => List(CopyInter(value, out), JumpInter(endLabel))
+      case CallInter(_, _, _) => throw new Exception("something is seriously fucking wrong here")
+      case x => List(x)
+    }
+  }
+
+  def rename(newNames: Map[VarOrLit, VarOrLit]): InterInstr = {
+    throw new Exception("not yet")
+  }
 }
 
 case class BinOpInter(op: BinOperator, in1: VarOrLit, in2: VarOrLit, targetVar: String) extends InterInstr
