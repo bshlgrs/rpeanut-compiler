@@ -1,5 +1,6 @@
 package statement
 
+import function._
 import expr._
 import binOperator._
 import boolExpr._
@@ -7,6 +8,7 @@ import varOrLit._
 import interInstr._
 import counter.Counter
 import statement._
+import module._
 
 sealed abstract class Statement {
   override def toString: String = this match {
@@ -26,7 +28,7 @@ sealed abstract class Statement {
     case ArrayAssignment(name, stuff) => (name + " = { " + stuff.mkString(", ")
                                               + " };")
   }
-  def toIntermediate(): List[InterInstr]
+  def toIntermediate(module: Module): List[InterInstr]
 
   def toIntermediateWithFixed(fixed: List[String]): (List[InterInstr], List[InterInstr]) = {
     throw new Exception("not implemented")
@@ -60,8 +62,8 @@ sealed abstract class Statement {
 }
 
 case class Assignment(name: String, rhs: Expr) extends Statement {
-  override def toIntermediate(): List[InterInstr] = {
-    var (exprInters, resultPlace) = rhs.toIntermediate()
+  override def toIntermediate(module: Module): List[InterInstr] = {
+    var (exprInters, resultPlace) = rhs.toIntermediate(module)
     if (exprInters.length == 0)
       return List(CopyInter(resultPlace, name))
 
@@ -95,9 +97,9 @@ case class Assignment(name: String, rhs: Expr) extends Statement {
 }
 
 case class IndirectAssignment(lhs: Expr, rhs: Expr) extends Statement {
-  override def toIntermediate(): List[InterInstr] = {
-    val (lhsInstr, lhsVar) = lhs.toIntermediate()
-    val (rhsInstr, rhsVar) = rhs.toIntermediate()
+  override def toIntermediate(module: Module): List[InterInstr] = {
+    val (lhsInstr, lhsVar) = lhs.toIntermediate(module)
+    val (rhsInstr, rhsVar) = rhs.toIntermediate(module)
     CommentInter(this.toString()) +: (lhsInstr ::: rhsInstr) :+
                                     StoreInter(rhsVar, lhsVar)
   }
@@ -106,12 +108,12 @@ case class IndirectAssignment(lhs: Expr, rhs: Expr) extends Statement {
 case class IfElse(condition: BoolExpr,
                   thenBlock: List[Statement],
                   elseBlock: List[Statement]) extends Statement {
-  override def toIntermediate(): List[InterInstr] = {
+  override def toIntermediate(module: Module): List[InterInstr] = {
     val counter = Counter.getCounter();
     val conditionCode = condition.toIntermediate("then-"+counter.toString,
-                                            "else-"+counter.toString) : List[InterInstr]
-    val thenCode = StatementHelper.statementsToIntermediate(thenBlock)
-    val elseCode = StatementHelper.statementsToIntermediate(elseBlock)
+                                            "else-"+counter.toString, module) : List[InterInstr]
+    val thenCode = StatementHelper.statementsToIntermediate(thenBlock, module)
+    val elseCode = StatementHelper.statementsToIntermediate(elseBlock, module)
 
     return (List(CommentInter("if (" + condition.toString + ")")) :::
             conditionCode :::
@@ -128,12 +130,12 @@ case class IfElse(condition: BoolExpr,
 }
 
 case class While(condition: BoolExpr, block: List[Statement]) extends Statement {
-  override def toIntermediate(): List[InterInstr] = {
+  override def toIntermediate(module: Module): List[InterInstr] = {
     val counter = Counter.getCounter();
     val conditionCode = condition.toIntermediate("while-loop-" + counter.toString + "-body",
-                                          "endWhile-"+counter.toString) : List[InterInstr]
+                                          "endWhile-"+counter.toString, module) : List[InterInstr]
 
-    val blockCode = (for (line <- block) yield line.toIntermediate).flatten
+    val blockCode = (for (line <- block) yield line.toIntermediate(module)).flatten
 
     (List(CommentInter("while ("+ condition.toString + ") {"),
          LabelInter("while-" + counter.toString)) :::
@@ -147,20 +149,20 @@ case class While(condition: BoolExpr, block: List[Statement]) extends Statement 
 }
 
 case class Return(value: Option[Expr]) extends Statement {
-  override def toIntermediate(): List[InterInstr] = value match {
+  override def toIntermediate(module: Module): List[InterInstr] = value match {
     case None => {
       List(CommentInter(this.toString), ReturnVoidInter)
     }
     case Some(expr) => {
-      val (exprCode, returnPlace) = expr.toIntermediate
+      val (exprCode, returnPlace) = expr.toIntermediate(module)
       (List(CommentInter(this.toString)) ::: exprCode ::: List(ReturnWithValInter(returnPlace)))
     }
   }
 }
 
 case class VoidFunctionCall(name: String, args: List[Expr]) extends Statement {
-  override def toIntermediate(): List[InterInstr] = {
-      val arg_code = for( arg <- args ) yield arg.toIntermediate()
+  override def toIntermediate(module: Module): List[InterInstr] = {
+      val arg_code = for( arg <- args ) yield arg.toIntermediate(module)
       val code = List.concat(for ((code, varOrLit) <- arg_code) yield code).flatten
       val vars = for ((code, varOrLit) <- arg_code) yield varOrLit
       val callInstruction = CallInter(name, vars, None)
@@ -171,24 +173,24 @@ case class VoidFunctionCall(name: String, args: List[Expr]) extends Statement {
 
 case class ForLoop(instr: Statement, cond: BoolExpr, iterator: Statement,
                           block: List[Statement]) extends Statement {
-  override def toIntermediate() = {
-    instr.toIntermediate() ::: While(cond, block :+ iterator).toIntermediate()
+  override def toIntermediate(module: Module) = {
+    instr.toIntermediate(module) ::: While(cond, block :+ iterator).toIntermediate(module)
   }
 }
 
 case class ArrayAssignment(name: String, exprs: List[Expr]) extends Statement {
-  override def toIntermediate(): List[InterInstr] = {
+  override def toIntermediate(module: Module): List[InterInstr] = {
     if (exprs.length == 0) {
       return Nil
     } else if (exprs.length == 1) {
-      return new IndirectAssignment(Var(name), exprs(0)).toIntermediate()
+      return new IndirectAssignment(Var(name), exprs(0)).toIntermediate(module)
     } else {
       val counter = name+"-"+Counter.getCounter()
       val start = CopyInter(VOLVar(name), counter)
 
       val blockCode = (for {
         (expr, index) <- exprs.view.zipWithIndex
-        val (instrs, resultPlace) = expr.toIntermediate()
+        val (instrs, resultPlace) = expr.toIntermediate(module)
         } yield (instrs ::: List(StoreInter(resultPlace, VOLVar(counter))) ::: (
                   List(BinOpInter(
                       AddOp, VOLVar(counter), VOLLit(1), counter))))
@@ -200,10 +202,10 @@ case class ArrayAssignment(name: String, exprs: List[Expr]) extends Statement {
 }
 
 object StatementHelper {
-  def statementsToIntermediate(block: List[Statement]): List[InterInstr] = {
+  def statementsToIntermediate(block: List[Statement], module: Module): List[InterInstr] = {
     var out = List[InterInstr]()
     for(statement <- block) {
-      out = out ::: statement.toIntermediate()
+      out = out ::: statement.toIntermediate(module)
     }
     out
   }

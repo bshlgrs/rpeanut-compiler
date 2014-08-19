@@ -7,22 +7,22 @@ import assemblyMaker._
 import expr._
 import varOrLit._
 import counter._
+import module._
 
 class Function(val name: String, params: List[String], val vars: Map[String, Integer],
-                                                           body: List[Statement]) {
+                             body: List[Statement]) {
   override def toString() = ("def " + name + "(" + params.mkString(", ") +
               ") (" + vars.mkString(", ") + ") {\n" + body.mkString("\n") + "\n}")
 
-  // Style question: should this be def or val?
-  def toIntermediate(): List[InterInstr] = {
+  def toIntermediate(module: Module): List[InterInstr] = {
     var out = List[InterInstr]()
-    for (line <- body) {
-      out = out ::: line.toIntermediate
+    for (statement <- body) {
+      out = out ::: statement.toIntermediate(module)
     }
     out
   }
 
-  def toInline(vars: List[VarOrLit]): (List[InterInstr], VarOrLit) = {
+  def toInline(vars: List[VarOrLit], module: Module): (List[InterInstr], VarOrLit) = {
     val newVarNames = vars map (t => t -> (t match {
           case VOLVar(x) => VOLVar(Counter.getTempVarName())
           case VOLLit(x) => VOLLit(x)
@@ -35,8 +35,8 @@ class Function(val name: String, params: List[String], val vars: Map[String, Int
       CopyInter(inVar, hereVar)
     }) : List[InterInstr]
 
-    val mainCode = toIntermediate.map{_.inline(newVarNames, out, endLabel)}.flatten :
-            List[InterInstr]
+    val mainCode = toIntermediate(module).map{_.inline(newVarNames, out, endLabel)
+              }.flatten : List[InterInstr]
 
     (copies ++ mainCode, VOLVar(out))
   }
@@ -45,7 +45,9 @@ class Function(val name: String, params: List[String], val vars: Map[String, Int
 
   val strings: List[String] = allExpressions.map{_.strings}.flatten
 
-  val blocks: List[Block] = AssemblyMaker.separateIntoBlocks(toIntermediate)
+  def blocks(module: Module): List[Block] = {
+    AssemblyMaker.separateIntoBlocks(toIntermediate(module))
+  }
 
   // assumes uniform size
   val returnPosition = - params.length - 1
@@ -56,24 +58,24 @@ class Function(val name: String, params: List[String], val vars: Map[String, Int
   // }
 
     // Trust me, I write compilers, I know what I'm doing...
-  val localVars: List[String] =  {
-    blocks.map{_.varsMentioned}.flatten.groupBy{x=>x}
+  def localVars(module: Module): List[String] =  {
+    blocks(module).map{_.varsMentioned}.flatten.groupBy{x=>x}
       .mapValues (_.length).filter{_._2 > 1}.keys.toList.filterNot(params.contains(_))
   }
 
-  val allVars: List[String] = {
-    blocks.map{_.varsMentioned}.flatten.distinct
+  def allVars(module: Module): List[String] = {
+    blocks(module).map{_.varsMentioned}.flatten.distinct
   }
 
-  val varsModified: List[String] = {
-    blocks.map{_.code.map{_.outputVars()}}.flatten.flatten.distinct
+  def varsModified(module: Module): List[String] = {
+    blocks(module).map{_.code.map{_.outputVars()}}.flatten.flatten.distinct
   }
 
-  def isLocal(name: String): Boolean = {
-    blocks.map{_.varsMentioned}.flatten.count{_ == name} > 1
+  def isLocal(name: String, module: Module): Boolean = {
+    blocks(module).map{_.varsMentioned}.flatten.count{_ == name} > 1
   }
 
-  val localsMap: Map[String, Int] = {
+  def localsMap(module: Module): Map[String, Int] = {
     var dict = collection.mutable.Map[String, Int]()
 
     for ((x:String, i:Int) <- params.view.zipWithIndex) {
@@ -82,7 +84,7 @@ class Function(val name: String, params: List[String], val vars: Map[String, Int
 
     var currentPlace = 1
 
-    for ((x:String, i:Int) <- (localVars ++ vars.keys).removeDuplicates.zipWithIndex) {
+    for ((x:String, i:Int) <- (localVars(module) ++ vars.keys).removeDuplicates.zipWithIndex) {
       if (!dict.contains(x)) {
         dict(x) = currentPlace
         if (vars.contains(x))
@@ -95,23 +97,25 @@ class Function(val name: String, params: List[String], val vars: Map[String, Int
     dict.toMap
   }
 
-  def toAssembly(globals: List[String]): List[Assembly] = {
+  def toAssembly(globals: List[String], module: Module): List[Assembly] = {
+    // todo: rename lol
     val lol = (vars.values.toList.asInstanceOf[List[Int]]).sum
     ASM_Label(name) +:
-    (for (block <- blocks) yield { new
+    (for (block <- blocks(module)) yield { new
       BlockAssembler(block,
-                     localsMap,
+                     localsMap(module),
                      globals,
                      Some(returnPosition),
-                     localVars.length - vars.size + lol)
+                     localVars(module).length - vars.size + lol)
                               .assemble() }).flatten :+ ASM_Return
   }
 
-  def functionDependencies(): List[String] = {
-    for (CallInter(x, _, _) <- this.toIntermediate()) yield x
-  }
+  // needs rewriting
+  // def functionDependencies(): List[String] = {
+  //   for (CallInter(x, _, _) <- this.toIntermediate(module)) yield x
+  // }
 
-  def isProcedure(): Boolean = {
-    functionDependencies().length == 0
-  }
+  // def isProcedure(): Boolean = {
+  //   functionDependencies().length == 0
+  // }
 }

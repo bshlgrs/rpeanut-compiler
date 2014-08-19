@@ -5,6 +5,8 @@ import counter._
 import expr._
 import interInstr._
 import varOrLit._
+import function._
+import module._
 
 sealed abstract class BoolExpr {
   override def toString: String = this match {
@@ -14,7 +16,7 @@ sealed abstract class BoolExpr {
     case NotExpr(expr) => "!(" + expr.toString + ")"
   }
 
-  def toIntermediate(thenLabel: String, elseLabel: String): List[InterInstr] = throw new Exception("unimplemented")
+  def toIntermediate(thenLabel: String, elseLabel: String, module: Module): List[InterInstr] = throw new Exception("unimplemented")
 
   def allExpressions: List[Expr] = this match {
     case BoolBinOp(_, e1, e2) => List(e1, e2)
@@ -25,16 +27,16 @@ sealed abstract class BoolExpr {
 }
 
 case class BoolBinOp(op: BoolBinOperator, lhs: Expr, rhs: Expr) extends BoolExpr {
-  override def toIntermediate(thenLabel: String, elseLabel: String): List[InterInstr] = {
+  override def toIntermediate(thenLabel: String, elseLabel: String, module: Module): List[InterInstr] = {
     op match {
       case GreaterOrEqual => return (
         BoolBinOp(GreaterThan, BinOp(AddOp, Lit(1), lhs), rhs)
-                              .toIntermediate(thenLabel, elseLabel)
+                              .toIntermediate(thenLabel, elseLabel, module)
       )
       case _ => ()
     }
-    val (lhsCode, lhsResult) = lhs.toIntermediate()
-    val (rhsCode, rhsResult) = rhs.toIntermediate()
+    val (lhsCode, lhsResult) = lhs.toIntermediate(module)
+    val (rhsCode, rhsResult) = rhs.toIntermediate(module)
     val outputVar = Counter.getTempVarName()
 
     val comparisonInstrs: List[InterInstr] = op match {
@@ -53,25 +55,28 @@ case class BoolBinOp(op: BoolBinOperator, lhs: Expr, rhs: Expr) extends BoolExpr
 }
 
 case class AndExpr(lhs: BoolExpr, rhs: BoolExpr) extends BoolExpr {
-  override def toIntermediate(thenLabel: String, elseLabel: String): List[InterInstr] = {
+  override def toIntermediate(thenLabel: String, elseLabel: String, module: Module): List[InterInstr] = {
     val myLabel = "and-"+Counter.counter
-    val lhsCode = lhs.toIntermediate(myLabel, elseLabel)
-    val rhsCode = rhs.toIntermediate(thenLabel, elseLabel)
+    val lhsCode = lhs.toIntermediate(myLabel, elseLabel, module)
+    val rhsCode = rhs.toIntermediate(thenLabel, elseLabel, module)
     return (lhsCode ::: LabelInter(myLabel) +: rhsCode)
   }
 }
 
 case class OrExpr(lhs: BoolExpr, rhs: BoolExpr) extends BoolExpr {
-  override def toIntermediate(thenLabel: String, elseLabel: String): List[InterInstr] = {
+  override def toIntermediate(thenLabel: String, elseLabel: String, module: Module): List[InterInstr] = {
     val myLabel = "and-"+Counter.counter
-    val lhsCode = lhs.toIntermediate(thenLabel, myLabel)
-    val rhsCode = rhs.toIntermediate(thenLabel, elseLabel)
+    val lhsCode = lhs.toIntermediate(thenLabel, myLabel, module)
+    val rhsCode = rhs.toIntermediate(thenLabel, elseLabel, module)
     return (lhsCode ::: LabelInter(myLabel) +: rhsCode)
   }
 }
 
 case class NotExpr(expr: BoolExpr) extends BoolExpr {
-  override def toIntermediate(thenLabel: String, elseLabel: String) = expr.toIntermediate(elseLabel, thenLabel)
+  override def toIntermediate(thenLabel: String, elseLabel: String,
+             module: Module) = {
+    expr.toIntermediate(elseLabel, thenLabel, module)
+  }
 }
 
 sealed abstract class BoolBinOperator {
