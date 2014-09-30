@@ -11,21 +11,23 @@ object Compile extends CParser {
     args(0) match {
       case "readAndRun" => {
         val inputString = io.Source.stdin.getLines.mkString("\n")
-        compile(inputString)
+        compile(inputString, false, false)
         println(RPeANutWrapper.runAssembly(output.toString()))
       }
       case "compile" => {
-        compile(io.Source.fromFile(args(1)).mkString)
+        compile(io.Source.fromFile(args.last).mkString,
+                                            args contains "-v",
+                                            args contains "-s")
         println(output.toString)
         return;
       }
     }
   }
 
-  def compile(inputString: String) {
+  def compile(inputString: String, dash_v: Boolean, dash_s: Boolean) {
     parseAll(program, inputString) match {
       case Success(functions, _) => {
-        val module = new Module(functions)
+        val module = new Module(functions map {f => f.name -> f} toMap)
         println("successfully parsed, now compiling")
         for (function <- functions) {
           for (x <- function.strings) {
@@ -33,17 +35,25 @@ object Compile extends CParser {
             globals.append(hash)
             stringSection.append(hash+": block #"+x)
           }
+          if (dash_v)
+            println("compiling function "+function.name)
 
-          val compiled_code = function.toAssembly(globals.toList, module)
+          val intermediate = function.toIntermediate(module).mkString("\n")
 
-          if (function.name == "main") {
-            output.insert(0, compiled_code.mkString("\n")+"\n")
-            output.insert(0, "0x0100:\n")
+          if (dash_s)
+            println(intermediate)
+
+          if (true) {
+            val compiled_code = function.toAssembly(globals.toList, module)
+
+            if (function.name == "main") {
+              output.insert(0, compiled_code.mkString("\n")+"\n")
+              output.insert(0, "0x0100:\n")
+            }
+            else if (!function.isProcedure) {
+              output.append(compiled_code.mkString("\n")+"\n")
+            }
           }
-          else {
-            output.append(compiled_code.mkString("\n")+"\n")
-          }
-
         }
 
         output.append("\n\n; Library functions:\n")

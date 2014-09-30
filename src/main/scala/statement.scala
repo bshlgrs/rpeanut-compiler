@@ -51,6 +51,14 @@ sealed abstract class Statement {
     case ArrayAssignment(_, stuff) => stuff
   }
 
+  def allStatements: List[Statement] = this match {
+    case IfElse(_, thenBlock, elseBlock) => (this +: (thenBlock.map{_.allStatements}.flatten
+                                                        ++ elseBlock.map{_.allStatements}.flatten))
+    case While(_, block) => this +: block.map{_.allStatements}.flatten
+    case ForLoop(a,b,c,d) => this +: a +: c +: d.map{_.allStatements}.flatten
+    case _ => List(this)
+  }
+
   def variablesModified: List[String] = this match {
     case Assignment(x,_) => List(x)
     case IfElse(_, t, e) => ( t.map{_.variablesModified} ::: t.map{_.variablesModified}

@@ -118,7 +118,35 @@ sealed abstract class InterInstr {
   }
 
   def rename(newNames: Map[VarOrLit, VarOrLit]): InterInstr = {
-    throw new Exception("not yet")
+    def f(x: VarOrLit): VarOrLit = x match {
+      case VOLVar(y) => {
+        if (newNames.contains(x)) {
+          newNames(x)
+        } else {
+          x
+        }
+      }
+      case _ => x
+    }
+
+    this match {
+      case BinOpInter(op, in1, in2, out) => BinOpInter(op, f(in1), f(in2), out)
+      case LoadInter(a,b) => LoadInter(f(a),b)
+      case StoreInter(a, b) => StoreInter(f(a),f(b))
+      case CopyInter(a, b) => CopyInter(f(a),b)
+      case LabelInter(string) => LabelInter(string)
+      case JumpInter(string) => JumpInter(string)
+      case JumpZInter(func,a) => JumpZInter(func,f(a))
+      case JumpNInter(func,a) => JumpNInter(func,f(a))
+      case JumpNZInter(func,a) => JumpNZInter(func,f(a))
+      case CallInter(func, args, out) => CallInter(func, args.map{f(_)}, out)
+      case PopInter(out) => PopInter(out)
+      case PushInter => PushInter
+      case CommentInter(string) => CommentInter(string)
+      case ReturnWithValInter(x) => ReturnWithValInter(f(x))
+      case ReturnVoidInter => ReturnVoidInter
+      case AmpersandInter(a,b) => AmpersandInter(a,b)
+    }
   }
 }
 

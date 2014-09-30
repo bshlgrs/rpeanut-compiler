@@ -138,13 +138,27 @@ sealed abstract class Expr {
       }
     }
     case FunctionCall(name, args) => {
-      val arg_code = for( arg <- args ) yield arg.toIntermediate(module)
-      val code = List.concat(for ((code, varOrLit) <- arg_code) yield code).flatten
-      val vars = for ((code, varOrLit) <- arg_code) yield varOrLit
-      val out = Counter.getTempVarName()
-      val callInstruction = CallInter(name, vars, Some(out))
+      if (module.functions.contains(name)) {
+        val function = module.functions(name)
+        val argStuff = for( arg <- args ) yield arg.toIntermediate(module)
+        val argCode = List.concat(for ((code, varOrLit) <- argStuff) yield code).flatten
+        val vars = for ((code, varOrLit) <- argStuff) yield varOrLit
 
-      (code :+ callInstruction, VOLVar(out))
+
+        if (function.isProcedure) {
+          val (functionCode, out) = function.toInline(vars, module)
+          (argCode ++ functionCode, out)
+        }
+        else {
+          val out = Counter.getTempVarName()
+          val callInstruction = CallInter(name, vars, Some(out))
+
+          (argCode :+ callInstruction, VOLVar(out))
+        }
+      } else {
+        throw new Exception("refers to function which doesn't exist")
+      }
+
     }
     case IfExpression(condition, thenExpr, elseExpr) => {
       val newVal = Counter.getTempVarName()

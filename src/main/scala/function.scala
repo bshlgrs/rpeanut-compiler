@@ -38,15 +38,24 @@ class Function(val name: String, params: List[String], val vars: Map[String, Int
     val mainCode = toIntermediate(module).map{_.inline(newVarNames, out, endLabel)
               }.flatten : List[InterInstr]
 
-    (copies ++ mainCode, VOLVar(out))
+    ((copies ++ mainCode) :+ LabelInter(endLabel), VOLVar(out))
   }
 
   val allExpressions: List[Expr] = body.map{_.allExpressions}.flatten
 
   val strings: List[String] = allExpressions.map{_.strings}.flatten
 
-  def blocks(module: Module): List[Block] = {
-    AssemblyMaker.separateIntoBlocks(toIntermediate(module))
+  var memoizedBlocks = None : Option[List[Block]];
+
+  def blocks(module: Module): List[Block] = memoizedBlocks match {
+    case Some(x) => x
+    case None => {
+      val intermediate = toIntermediate(module)
+      println(intermediate.mkString("\n"))
+      var out = AssemblyMaker.separateIntoBlocks(intermediate)
+      memoizedBlocks = Some(out)
+      return out
+    }
   }
 
   // assumes uniform size
@@ -101,7 +110,7 @@ class Function(val name: String, params: List[String], val vars: Map[String, Int
     // todo: rename lol
     val lol = (vars.values.toList.asInstanceOf[List[Int]]).sum
     ASM_Label(name) +:
-    (for (block <- blocks(module)) yield { new
+    (for (block <- this.blocks(module)) yield { new
       BlockAssembler(block,
                      localsMap(module),
                      globals,
@@ -111,11 +120,12 @@ class Function(val name: String, params: List[String], val vars: Map[String, Int
   }
 
   // needs rewriting
-  // def functionDependencies(): List[String] = {
-  //   for (CallInter(x, _, _) <- this.toIntermediate(module)) yield x
-  // }
+  def functionDependencies(): List[String] = {
+    (for (VoidFunctionCall(x,_) <- body.map{_.allStatements}.flatten) yield x) ++
+    (for (FunctionCall(x,_) <- body.map{_.allExpressions}.flatten) yield x)
+  }
 
-  // def isProcedure(): Boolean = {
-  //   functionDependencies().length == 0
-  // }
+  def isProcedure(): Boolean = {
+    functionDependencies().length == 0
+  }
 }

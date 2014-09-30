@@ -40,8 +40,7 @@ int longest_palindromic_substring(str)
 }
 
 
-int longest_common_substring(str1, str2, table)
-                      () {
+int longest_common_substring(str1, str2, table) () {
   len1 = str1.stringLength();
   len2 = str2.stringLength();
   biggest = 0;
