@@ -13,8 +13,6 @@ class Block(val name: String, val code: List[InterInstr]) {
   }
 
   val varsMentioned: List[String] = code.map(x => x.allVars()).flatten.distinct
-
-  // def shittyAllocation(): List[Assembly] = throw new Exception("not implemented yet")
 }
 
 object AssemblyMaker {
