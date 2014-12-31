@@ -4,30 +4,31 @@ import standardLibrary._
 import module._
 
 object Compile extends CParser {
-  val output = new StringBuilder()
-  val stringSection: ListBuffer[String] = new ListBuffer()
-  val globals: ListBuffer[String] = new ListBuffer()
   def main(args: Array[String]) {
     args(0) match {
       case "readAndRun" => {
         val inputString = io.Source.stdin.getLines.mkString("\n")
-        compile(inputString, false, false)
-        println(RPeANutWrapper.runAssembly(output.toString()))
+        val output = compile(inputString, false, false)
+        println(RPeANutWrapper.runAssembly(output))
       }
       case "compile" => {
-        compile(io.Source.fromFile(args.last).mkString,
+        println(compile(io.Source.fromFile(args.last).mkString,
                                             args contains "-v",
-                                            args contains "-s")
-        println(output.toString)
+                                            args contains "-s"))
         return;
       }
     }
   }
 
-  def compile(inputString: String, dash_v: Boolean, dash_s: Boolean) {
+  def compile(inputString: String, dash_v: Boolean, dash_s: Boolean): String = {
     parseAll(program, inputString) match {
       case Success(functions, _) => {
+        val output = new StringBuilder()
+        val stringSection: ListBuffer[String] = new ListBuffer()
+        val globals: ListBuffer[String] = new ListBuffer()
+
         val module = new Module(functions map {f => f.name -> f} toMap)
+
         println("successfully parsed, now compiling")
         for (function <- functions) {
           for (x <- function.strings) {
@@ -67,22 +68,9 @@ object Compile extends CParser {
 
         output.append("\n; Data section: \n"+stringSection.distinct.mkString("\n\n"))
 
-//         output.append("""
-// ; This is a heap, which is used by malloc
-// 0x3FF0:
-// frontier:
-//   block #0x4001
-// next:
-//   block #0x4000
-// 0x4000:
-//   block #-1
-//   block 0x2FFF
-
-// """)
-        // println(RPeANutWrapper.runAssembly(output.toString()))
-
+        return output.toString()
       }
-      case x => println("Parse error"); println(x)
+      case x => println("Parse error"); println(x); return null;
     }
   }
 }

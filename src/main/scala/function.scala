@@ -126,6 +126,6 @@ class Function(val name: String, params: List[String], val vars: Map[String, Int
   }
 
   def isProcedure(): Boolean = {
-    functionDependencies().length == 0
+    functionDependencies().length == 0 && false
   }
 }

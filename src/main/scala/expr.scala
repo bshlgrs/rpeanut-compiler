@@ -144,7 +144,6 @@ sealed abstract class Expr {
         val argCode = List.concat(for ((code, varOrLit) <- argStuff) yield code).flatten
         val vars = for ((code, varOrLit) <- argStuff) yield varOrLit
 
-
         if (function.isProcedure) {
           val (functionCode, out) = function.toInline(vars, module)
           (argCode ++ functionCode, out)

@@ -13,3 +13,5 @@ scalaVersion := "2.9.2"
 // libraryDependencies ++= Seq("com.twitter" % "finagle-core" % "1.9.0", "com.twitter" % "finagle-http" % "1.9.0")
 
 libraryDependencies += "com.novocode" % "junit-interface" % "0.10" % "test"
+
+libraryDependencies += "org.scala-lang" % "scala-swing" % "2.10+"

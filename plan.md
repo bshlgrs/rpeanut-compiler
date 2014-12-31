@@ -18,5 +18,5 @@ The global variable version of Counter worked badly because I wanted to swap out
 
 Other things to rewrite:
 
-- In AssemblyMaker, I should use mutating methods of List
+- In AssemblyMaker, I should use mutating methods of List.
 

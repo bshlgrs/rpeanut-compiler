@@ -11,6 +11,7 @@ sealed abstract class Register {
     case ZeroRegister => "ZERO"
   }
 }
+
 case class GPRegister(n: Int) extends Register
 case object StackPointer extends Register
 case object OneRegister extends Register
