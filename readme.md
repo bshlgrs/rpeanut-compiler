@@ -1,5 +1,9 @@
 # rPeANUt compiler
 
+rPeANUt is a simulated microprocessor that the Australian National University uses to teach assembly programming. This is a broken project of mine to make a compiler targeting it.
+
+**If you just want to play with the simulation, you can find the JAR file in the top level of this repository.**
+
 This sorta compiles a language like C to rPeANUt assembly:
 
 ```
